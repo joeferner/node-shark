@@ -6,9 +6,13 @@
 
 /* static */ v8::Persistent<v8::FunctionTemplate> Dissector::s_ct;
 
+// the wireshark header file does not declare this as extern "C" so we need to declare it ourselves
 extern "C" {
   extern int wtap_pcap_encap_to_wtap_encap(int encap);
 };
+
+Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
+}
 
 struct TreeToObjectData {
   epan_dissect_t *edt;
@@ -16,18 +20,6 @@ struct TreeToObjectData {
   v8::Local<v8::Object> parent;
   const char* parentName;
 };
-
-double getNumber(v8::Local<v8::Object> &obj, const char *key, double def) {
-  v8::Local<v8::Value> v = obj->Get(v8::String::New(key));
-  if(v->IsNumber()) {
-    return v->ToNumber()->Value();
-  }
-  if(v->IsString()) {
-    v8::String::AsciiValue asciiVal(v);
-    return atof(*asciiVal);
-  }
-  return def;
-}
 
 /*
  * Find the data source for a specified field, and return a pointer
@@ -44,18 +36,7 @@ double getNumber(v8::Local<v8::Object> &obj, const char *key, double def) {
 		src = (data_source *)src_le->data;
 		src_tvb = src->tvb;
 		if (fi->ds_tvb == src_tvb) {
-			/*
-			 * Found it.
-			 *
-			 * XXX - a field can have a length that runs past
-			 * the end of the tvbuff.  Ideally, that should
-			 * be fixed when adding an item to the protocol
-			 * tree, but checking the length when doing
-			 * that could be expensive.  Until we fix that,
-			 * we'll do the check here.
-			 */
-			tvbuff_length = tvb_length_remaining(src_tvb,
-			    fi->start);
+			tvbuff_length = tvb_length_remaining(src_tvb, fi->start);
 			if (tvbuff_length < 0) {
 				return NULL;
 			}
@@ -131,13 +112,10 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
   childObj->Set(v8::String::New("sizeInPacket"), v8::Integer::New(fi->length));
   childObj->Set(v8::String::New("posInPacket"), v8::Integer::New(posInPacket));
   childObj->Set(v8::String::New("showValue"), v8::String::New(&(showString[showStringChopPos])));
-  //printf("%s (size=%d, pos=%d, show=\"%s\"", fi->hfinfo->abbrev, fi->length, posInPacket, &(showString[showStringChopPos]));
 
   if(fi->hfinfo->type != FT_PROTOCOL) {
-    //printf(", val=\"");
     if (fi->length > 0) {
       if (fi->hfinfo->bitmask!=0) {
-        //printf("%X", fvalue_get_uinteger(&fi->value));
         childObj->Set(v8::String::New("value"), v8::Integer::New(fvalue_get_uinteger(&fi->value)));
       }
       else {
@@ -145,10 +123,8 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
         childObj->Set(v8::String::New("value"), v8::String::New(str.c_str()));
       }
     }
-    //printf("\"");
   }
 
-  //printf(")\n");
   int offset = 0;
   int parentNameLength = strlen(pdata->parentName);
   if(!strncmp(fi->hfinfo->abbrev, pdata->parentName, parentNameLength)) {
@@ -168,9 +144,6 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
     pdata->parent = lastObj;
     pdata->parentName = lastParentName;
   }
-}
-
-Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
 }
 
 /*static*/ void Dissector::Init(v8::Handle<v8::Object> target) {
@@ -212,7 +185,7 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
   epan_dissect_t edt;
 
   // read preferences
-  v8::Handle<v8::Value> *error;
+  v8::Handle<v8::Value> *error = NULL;
   e_prefs *prefs = self->readPrefs(error);
   if(prefs == NULL) {
     return *error;
@@ -248,10 +221,10 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
   nstime_set_unset(&prev_dis_ts);
   nstime_set_unset(&prev_cap_ts);
 
-  whdr.ts.secs = getNumber(packetHeader, "timestampSeconds", 0);;
-  whdr.ts.nsecs = getNumber(packetHeader, "timestampMicroseconds", 0);;
-  whdr.caplen = getNumber(packetHeader, "capturedLength", 0);
-  whdr.len = getNumber(packetHeader, "originalLength", 0);
+  whdr.ts.secs = getNumberFromV8Object(packetHeader, "timestampSeconds", 0);
+  whdr.ts.nsecs = getNumberFromV8Object(packetHeader, "timestampMicroseconds", 0);
+  whdr.caplen = getNumberFromV8Object(packetHeader, "capturedLength", 0);
+  whdr.len = getNumberFromV8Object(packetHeader, "originalLength", 0);
   whdr.pkt_encap = encap;
 
   memset(&pseudo_header, 0, sizeof(pseudo_header));
