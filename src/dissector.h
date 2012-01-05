@@ -24,6 +24,7 @@
 #include <cfile.h>
 #include <log.h>
 #include <glib.h>
+#include <string>
 
 class Dissector : node::ObjectWrap {
 public:
@@ -31,9 +32,15 @@ public:
   static v8::Handle<v8::Value> New(const v8::Arguments& args);
 
 private:
+  Dissector(int linkLayerType);
   static v8::Persistent<v8::FunctionTemplate> s_ct;
   static v8::Handle<v8::Value> dissect(const v8::Arguments& args);
+  e_prefs* readPrefs(v8::Handle<v8::Value> *error);
+  static void treeToObject(proto_node *node, gpointer data);
+  static std::string getFieldHexValue(GSList *src_list, field_info *fi);
+  static const guint8 *getFieldData(GSList *src_list, field_info *fi);
 
+  int m_linkLayerType;
   capture_file m_cfile;
 };
 
