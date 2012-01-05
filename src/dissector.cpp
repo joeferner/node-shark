@@ -14,6 +14,18 @@ struct print_data {
   int level;
 };
 
+double getNumber(v8::Local<v8::Object> &obj, const char *key, double def) {
+  v8::Local<v8::Value> v = obj->Get(v8::String::New(key));
+  if(v->IsNumber()) {
+    return v->ToNumber()->Value();
+  }
+  if(v->IsString()) {
+    v8::String::AsciiValue asciiVal(v);
+    return atof(*asciiVal);
+  }
+  return def;
+}
+
 /*
  * Find the data source for a specified field, and return a pointer
  * to the data in it. Returns NULL if the data is out of bounds.
@@ -203,8 +215,8 @@ void my_tree_print_node(proto_node *node, gpointer data)
 /*static*/ v8::Handle<v8::Value> Dissector::dissect(const v8::Arguments& args) {
   Dissector* self = ObjectWrap::Unwrap<Dissector>(args.This());
 
-  REQ_OBJECT_ARG(0, dataBuffer);
-
+  REQ_OBJECT_ARG(0, packetHeader);
+  REQ_OBJECT_ARG(1, dataBuffer);
   guchar *data = (guchar*)node::Buffer::Data(dataBuffer);
 
   e_prefs             *prefs_p;
@@ -275,10 +287,10 @@ void my_tree_print_node(proto_node *node, gpointer data)
   union wtap_pseudo_header pseudo_header;
   struct wtap_pkthdr whdr;
 
-  whdr.ts.secs = 0;
-  whdr.ts.nsecs = 0;
-  whdr.caplen = 121;
-  whdr.len = 121;
+  whdr.ts.secs = getNumber(packetHeader, "secs", 0);;
+  whdr.ts.nsecs = getNumber(packetHeader, "nsecs", 0);;
+  whdr.caplen = getNumber(packetHeader, "caplen", 0);
+  whdr.len = getNumber(packetHeader, "len", 0);
   whdr.pkt_encap = encap;
 
   memset(&pseudo_header, 0, sizeof(pseudo_header));
