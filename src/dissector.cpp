@@ -125,15 +125,37 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
     }
   }
 
-  int offset = 0;
-  int parentNameLength = strlen(pdata->parentName);
-  if(!strncmp(fi->hfinfo->abbrev, pdata->parentName, parentNameLength)) {
-    offset = parentNameLength;
-    if(fi->hfinfo->abbrev[offset] == '.') {
-      offset++;
-    }
-  }
-  pdata->parent->Set(v8::String::New(&fi->hfinfo->abbrev[offset]), childObj);
+	const char *name;
+	int freeName = false;
+	if(!strcmp(fi->hfinfo->abbrev, "text")) {
+		gchar label_str[ITEM_LABEL_LENGTH];
+		if (fi->rep) {
+			name = fi->rep->representation;
+		}
+		else { /* no, make a generic label */
+			name = label_str;
+			proto_item_fill_label(fi, label_str);
+		}
+		if (PROTO_ITEM_IS_GENERATED(node)) {
+			name = g_strdup_printf("[%s]", name);
+			freeName = true;
+		}
+	} else {
+		int offset = 0;
+		int parentNameLength = strlen(pdata->parentName);
+		if(!strncmp(fi->hfinfo->abbrev, pdata->parentName, parentNameLength)) {
+			offset = parentNameLength;
+			if(fi->hfinfo->abbrev[offset] == '.') {
+				offset++;
+			}
+		}
+		name = &fi->hfinfo->abbrev[offset];
+	}
+  pdata->parent->Set(v8::String::New(name), childObj);
+
+	if (freeName) {
+		g_free((char*)name);
+	}
 
   if (node->first_child != NULL) {
     v8::Local<v8::Object> lastObj = pdata->parent;
