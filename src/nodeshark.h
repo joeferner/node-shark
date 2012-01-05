@@ -21,7 +21,6 @@ public:
 
 private:
   static v8::Persistent<v8::FunctionTemplate> s_ct;
-  static v8::Handle<v8::Value> doIt(const v8::Arguments& args);
   static void openFailureMessage(const char *filename, int err, gboolean for_writing);
   static void failureMessage(const char *msg_format, va_list ap);
   static void readFailureMessage(const char *filename, int err);
