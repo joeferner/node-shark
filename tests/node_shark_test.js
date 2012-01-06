@@ -5,6 +5,32 @@ var nodeshark = require("../");
 var util = require('util');
 
 exports['NodeSharkTest'] = nodeunit.testCase({
+  "bad arguments": function(test) {
+    var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
+    try {
+      var packet = dissector.dissect({});
+      throw new Error("This should have thrown an error");
+    } catch(e) {
+      test.equal(e.message, "First argument must contain a member 'data' that is a buffer.");
+      test.done();
+    }
+  },
+
+  "process just a buffer no packet": function(test) {
+    var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
+    var buffer = new Buffer([
+      0x58, 0x6d, 0x8f, 0x67, 0x8a, 0x4d, 0x00, 0x1b, 0x21, 0xcf, 0xa1, 0x00, 0x08, 0x00, 0x45, 0x00,
+      0x00, 0x3b, 0xd1, 0xb0, 0x40, 0x00, 0x40, 0x11, 0xc5, 0xde, 0x0a, 0x14, 0x08, 0x65, 0xc0, 0xa8,
+      0xd0, 0x01, 0xc5, 0x32, 0x00, 0x35, 0x00, 0x27, 0xa3, 0x5b, 0x65, 0x89, 0x01, 0x00, 0x00, 0x01,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x6d, 0x61, 0x69, 0x6c, 0x04, 0x6c, 0x69, 0x76, 0x65,
+      0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01
+    ]);
+    var packet = dissector.dissect(buffer);
+    test.ok(packet["dns"]["Queries"]["mail.live.com: type A, class IN"]);
+    //console.log(util.inspect(packet, true, 10));
+    test.done();
+  },
+
   "process dns packet": function(test) {
     var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
     var buffer = new Buffer([
@@ -14,13 +40,15 @@ exports['NodeSharkTest'] = nodeunit.testCase({
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x6d, 0x61, 0x69, 0x6c, 0x04, 0x6c, 0x69, 0x76, 0x65,
       0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01
     ]);
-    var packetHeader = {
+    var rawPacket = {
       timestampSeconds: 10,
       timestampMicroseconds: 20,
       capturedLength: buffer.length,
-      originalLength: buffer.length
+      originalLength: buffer.length,
+      data: buffer
     };
-    var packet = dissector.dissect(packetHeader, buffer);
+    var packet = dissector.dissect(rawPacket);
+    test.ok(packet["dns"]["Queries"]["mail.live.com: type A, class IN"]);
     //console.log(util.inspect(packet, true, 10));
     test.done();
   },
@@ -50,14 +78,16 @@ exports['NodeSharkTest'] = nodeunit.testCase({
       0x00, 0x04, 0xd8, 0xef, 0x24, 0x0a, 0xc0, 0xd6, 0x00, 0x01, 0x00, 0x01, 0x00, 0x02, 0x8b, 0x38,
       0x00, 0x04, 0xd8, 0xef, 0x26, 0x0a
     ]);
-    var packetHeader = {
+    var rawPacket = {
       timestampSeconds: 10,
       timestampMicroseconds: 20,
       capturedLength: buffer.length,
-      originalLength: buffer.length
+      originalLength: buffer.length,
+      data: buffer
     };
-    var packet = dissector.dissect(packetHeader, buffer);
-    console.log(util.inspect(packet, true, 10));
+    var packet = dissector.dissect(rawPacket);
+    test.ok(packet["dns"]["Answers"]["www.l.google.com: type A, class IN, addr 74.125.113.103"]);
+    //console.log(util.inspect(packet, true, 10));
     test.done();
   }
 });

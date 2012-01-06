@@ -198,12 +198,39 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
 /*static*/ v8::Handle<v8::Value> Dissector::dissect(const v8::Arguments& args) {
   Dissector* self = ObjectWrap::Unwrap<Dissector>(args.This());
 
-  REQ_OBJECT_ARG(0, packetHeader);
-  REQ_OBJECT_ARG(1, dataBuffer);
-  guchar *data = (guchar*)node::Buffer::Data(dataBuffer);
+  struct wtap_pkthdr whdr;
+  guchar *data;
+
+	// no packet information just a buffer
+	if(node::Buffer::HasInstance(args[0])) {
+		v8::Local<v8::Value> dataBufferValue = args[0];
+		v8::Local<v8::Object> dataBuffer = dataBufferValue->ToObject();
+		int dataBufferLength = node::Buffer::Length(dataBuffer);
+		data = (guchar*)node::Buffer::Data(dataBuffer);
+		whdr.ts.secs = 0;
+		whdr.ts.nsecs = 0;
+		whdr.caplen = dataBufferLength;
+		whdr.len = dataBufferLength;
+	}
+
+	// packet information with a buffer in the "data" property
+	else {
+		REQ_OBJECT_ARG(0, packet);
+		v8::Local<v8::Value> dataBufferValue = packet->Get(v8::String::New("data"));
+		if(dataBufferValue->IsUndefined()) {
+			return v8::ThrowException(v8::Exception::Error(v8::String::New("First argument must contain a member 'data' that is a buffer.")));
+		}
+		v8::Local<v8::Object> dataBuffer = dataBufferValue->ToObject();
+		data = (guchar*)node::Buffer::Data(dataBuffer);
+		int dataBufferLength = node::Buffer::Length(dataBuffer);
+		whdr.ts.secs = getNumberFromV8Object(packet, "timestampSeconds", 0);
+		whdr.ts.nsecs = getNumberFromV8Object(packet, "timestampMicroseconds", 0);
+		whdr.caplen = getNumberFromV8Object(packet, "capturedLength", dataBufferLength);
+		whdr.len = getNumberFromV8Object(packet, "originalLength", dataBufferLength);
+	}
+
   frame_data fdata;
   union wtap_pseudo_header pseudo_header;
-  struct wtap_pkthdr whdr;
   epan_dissect_t edt;
 
   // read preferences
@@ -243,10 +270,6 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
   nstime_set_unset(&prev_dis_ts);
   nstime_set_unset(&prev_cap_ts);
 
-  whdr.ts.secs = getNumberFromV8Object(packetHeader, "timestampSeconds", 0);
-  whdr.ts.nsecs = getNumberFromV8Object(packetHeader, "timestampMicroseconds", 0);
-  whdr.caplen = getNumberFromV8Object(packetHeader, "capturedLength", 0);
-  whdr.len = getNumberFromV8Object(packetHeader, "originalLength", 0);
   whdr.pkt_encap = encap;
 
   memset(&pseudo_header, 0, sizeof(pseudo_header));
