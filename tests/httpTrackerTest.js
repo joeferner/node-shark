@@ -15,7 +15,7 @@ exports['HttpTrackerTest'] = nodeunit.testCase({
       test.ok(http.request.fullUri);
     });
     httpTracker.on("responseHeaders", function(http) {
-      console.log(http.request.fullUri, http.response.code, http.response.codeString);
+      test.ok(http.response.code, 200);
     });
 
     var pcapParser = new pcapp.Parser('./test_data/ethereal.com.pcap');

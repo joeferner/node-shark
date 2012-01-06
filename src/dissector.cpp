@@ -82,15 +82,6 @@ struct TreeToObjectData {
   return result.str();
 }
 
-void bufferNullCallback(char *data, void *hint) {
-
-}
-
-v8::Handle<v8::Value> Dissector::sliceBuffer(v8::Handle<v8::Object> buffer, int start, int end) {
-	node::Buffer *b = node::Buffer::New( node::Buffer::Data(buffer) + start, end - start, bufferNullCallback, NULL );
-	return b->handle_;
-}
-
 void Dissector::treeToObject(proto_node *node, gpointer data)
 {
   field_info *fi = PNODE_FINFO(node);
@@ -127,15 +118,9 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
 
   if(fi->hfinfo->type != FT_PROTOCOL) {
     if (fi->length > 0) {
-      if (fi->hfinfo->bitmask!=0) {
+      if (fi->hfinfo->bitmask != 0) {
 				unsigned int val = fvalue_get_uinteger(&fi->value);
         childObj->Set(v8::String::New("value"), v8::Integer::New(val));
-      }
-      else {
-        //std::string str = getFieldHexValue(pdata->edt->pi.data_src, fi);
-        //childObj->Set(v8::String::New("value"), v8::String::New(str.c_str()));
-				v8::Handle<v8::Value> slice = sliceBuffer(pdata->rawPacket, posInPacket, posInPacket + fi->length);
-				childObj->Set(v8::String::New("value"), slice);
       }
     }
   }
