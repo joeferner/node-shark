@@ -16,7 +16,6 @@ def configure(conf):
   conf.env.append_unique('CXXFLAGS', ['-D_FILE_OFFSET_BITS=64'])
   conf.env.append_unique('CXXFLAGS', ['-D_LARGEFILE_SOURCE'])
   conf.env.append_unique('CXXFLAGS', ['-DHAVE_CONFIG_H'])
-  conf.env.append_unique('LINKFLAGS', ['-export-dynamic'])
 
   wireshark_include = environ.get("WIRESHARK_INCLUDE_DIR", "/usr/include/wireshark/")
   if wireshark_include:
@@ -29,6 +28,10 @@ def configure(conf):
   glib_config_include = environ.get("GLIB_CONFIG_INCLUDE_DIR", "/usr/lib/i386-linux-gnu/glib-2.0/include/")
   if glib_config_include:
       conf.env.append_unique('CXXFLAGS', [ '-I' + glib_config_include ])
+
+  wireshark_lib = environ.get("WIRESHARK_LIB", "/usr/local/lib/")
+  if wireshark_lib:
+      conf.env.append_unique('LINKFLAGS', [ '-L' + wireshark_lib ])
 
   conf.env.append_unique('LINKFLAGS', ['-lwireshark', '-lwiretap', '-lwsutil'])
 
