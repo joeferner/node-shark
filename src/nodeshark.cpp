@@ -53,6 +53,12 @@ tshark_log_handler (const gchar *log_domain, GLogLevelFlags log_level, const gch
   prefs_register_modules();
 
   setlocale(LC_ALL, "");
+
+  // Cleanup all data structures used for dissection.
+  cleanup_dissection();
+
+  // Initialize all data structures used for dissection.
+  init_dissection();
 }
 
 /*static*/ v8::Handle<v8::Value> NodeShark::New(const v8::Arguments& args) {

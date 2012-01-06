@@ -1,2 +1,2 @@
 
-module.exports = require('./lib/node_shark');
+module.exports = require('./lib/nodeShark');

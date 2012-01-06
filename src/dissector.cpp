@@ -111,7 +111,9 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
 
   childObj->Set(v8::String::New("sizeInPacket"), v8::Integer::New(fi->length));
   childObj->Set(v8::String::New("posInPacket"), v8::Integer::New(posInPacket));
-  childObj->Set(v8::String::New("showValue"), v8::String::New(&(showString[showStringChopPos])));
+	if(showString) {
+		childObj->Set(v8::String::New("showValue"), v8::String::New(&(showString[showStringChopPos])));
+	}
 
   if(fi->hfinfo->type != FT_PROTOCOL) {
     if (fi->length > 0) {
@@ -187,12 +189,46 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
   REQ_NUMBER_ARG(0, linkLayerType);
   int linkLayerTypeVal = linkLayerType->Value();
 
-  Dissector *client = new Dissector(linkLayerTypeVal);
+  Dissector *self = new Dissector(linkLayerTypeVal);
 
-  cap_file_init(&client->m_cfile);
+  cap_file_init(&self->m_cfile);
 
-  client->Wrap(args.This());
+  // read preferences
+  v8::Handle<v8::Value> *error = NULL;
+  e_prefs *prefs = self->readPrefs(error);
+  if(prefs == NULL) {
+    return *error;
+  }
+
+  // Build the column format array
+  build_column_format_array(&self->m_cfile.cinfo, prefs->num_cols, TRUE);
+
+  self->m_cfile.wth = NULL;
+  self->m_cfile.f_datalen = 0;
+  self->m_cfile.filename = g_strdup("");
+  self->m_cfile.is_tempfile = FALSE;
+  self->m_cfile.user_saved = FALSE;
+  self->m_cfile.cd_t = WTAP_FILE_UNKNOWN;
+  self->m_cfile.count = 0;
+  self->m_cfile.drops_known = FALSE;
+  self->m_cfile.drops = 0;
+  self->m_cfile.has_snap = FALSE;
+  self->m_cfile.snap = WTAP_MAX_PACKET_SIZE;
+  nstime_set_zero(&self->m_cfile.elapsed_time);
+
+  self->m_encap = wtap_pcap_encap_to_wtap_encap(self->m_linkLayerType);
+
+  nstime_set_unset(&self->m_first_ts);
+  nstime_set_unset(&self->m_prev_dis_ts);
+  nstime_set_unset(&self->m_prev_cap_ts);
+
+	self->m_data_offset = 0;
+
+  self->Wrap(args.This());
   return args.This();
+}
+
+Dissector::~Dissector() {
 }
 
 /*static*/ v8::Handle<v8::Value> Dissector::dissect(const v8::Arguments& args) {
@@ -200,6 +236,8 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
 
   struct wtap_pkthdr whdr;
   guchar *data;
+
+	whdr.pkt_encap = self->m_encap;
 
 	// no packet information just a buffer
 	if(node::Buffer::HasInstance(args[0])) {
@@ -240,64 +278,22 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
 	}
 
   frame_data fdata;
-  union wtap_pseudo_header pseudo_header;
-  epan_dissect_t edt;
-
-  // read preferences
-  v8::Handle<v8::Value> *error = NULL;
-  e_prefs *prefs = self->readPrefs(error);
-  if(prefs == NULL) {
-    return *error;
-  }
-
-  // Build the column format array
-  build_column_format_array(&self->m_cfile.cinfo, prefs->num_cols, TRUE);
-
-  // Cleanup all data structures used for dissection.
-  cleanup_dissection();
-
-  // Initialize all data structures used for dissection.
-  init_dissection();
-
-  int encap = wtap_pcap_encap_to_wtap_encap(self->m_linkLayerType);
-  self->m_cfile.wth = NULL;
-  self->m_cfile.f_datalen = 0;
-  self->m_cfile.filename = g_strdup("");
-  self->m_cfile.is_tempfile = FALSE;
-  self->m_cfile.user_saved = FALSE;
-  self->m_cfile.cd_t = WTAP_FILE_UNKNOWN;
-  self->m_cfile.count = 0;
-  self->m_cfile.drops_known = FALSE;
-  self->m_cfile.drops = 0;
-  self->m_cfile.has_snap = FALSE;
-  self->m_cfile.snap = WTAP_MAX_PACKET_SIZE;
-  nstime_set_zero(&self->m_cfile.elapsed_time);
-
-  static nstime_t first_ts;
-  static nstime_t prev_dis_ts;
-  static nstime_t prev_cap_ts;
-  nstime_set_unset(&first_ts);
-  nstime_set_unset(&prev_dis_ts);
-  nstime_set_unset(&prev_cap_ts);
-
-  whdr.pkt_encap = encap;
-
-  memset(&pseudo_header, 0, sizeof(pseudo_header));
 
   self->m_cfile.count++;
-
-  frame_data_init(&fdata, self->m_cfile.count, &whdr, 0, 0);
-  epan_dissect_init(&edt, TRUE, TRUE);
-  frame_data_set_before_dissect(&fdata, &self->m_cfile.elapsed_time, &first_ts, &prev_dis_ts, &prev_cap_ts);
-  epan_dissect_run(&edt, &pseudo_header, data, &fdata, &self->m_cfile.cinfo);
+  frame_data_init(&fdata, self->m_cfile.count, &whdr, self->m_data_offset, self->m_cum_bytes);
+  epan_dissect_init(&self->m_edt, TRUE, TRUE);
+  frame_data_set_before_dissect(&fdata, &self->m_cfile.elapsed_time, &self->m_first_ts, &self->m_prev_dis_ts, &self->m_prev_cap_ts);
+  epan_dissect_run(&self->m_edt, &self->m_cfile.pseudo_header, data, &fdata, &self->m_cfile.cinfo);
+	frame_data_set_after_dissect(&fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
+	self->m_data_offset += whdr.caplen;
 
   TreeToObjectData pdata;
-  pdata.edt = &edt;
+  pdata.edt = &self->m_edt;
   pdata.root = pdata.parent = v8::Object::New();
   pdata.parentName = "";
-  proto_tree_children_foreach(edt.tree, treeToObject, &pdata);
+  proto_tree_children_foreach(self->m_edt.tree, treeToObject, &pdata);
 
-  epan_dissect_cleanup(&edt);
+  epan_dissect_cleanup(&self->m_edt);
   frame_data_cleanup(&fdata);
 
   return pdata.root;

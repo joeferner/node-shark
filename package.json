@@ -15,7 +15,8 @@
     { "type": "git", "url": "https://github.com/nearinfinity/node-shark.git" }
   ],
   "devDependencies": {
-    "nodeunit": "~0.6.4"
+    "nodeunit": "~0.6.4",
+    "pcap-parser": "~>0.0.2"
   },
   "scripts": {
     "test": "nodeunit tests/*",

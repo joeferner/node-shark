@@ -4,7 +4,7 @@ var nodeunit = require("nodeunit");
 var nodeshark = require("../");
 var util = require('util');
 
-exports['NodeSharkTest'] = nodeunit.testCase({
+exports['DissectorTest'] = nodeunit.testCase({
   "bad arguments": function(test) {
     var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
     try {

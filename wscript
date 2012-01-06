@@ -18,8 +18,6 @@ def configure(conf):
   conf.env.append_unique('CXXFLAGS', ['-DHAVE_CONFIG_H'])
   conf.env.append_unique('LINKFLAGS', ['-export-dynamic'])
 
-  wireshark_dir = environ.get("WIRESHARK_DIR", "/usr/include/wireshark/")
-
   wireshark_include = environ.get("WIRESHARK_INCLUDE_DIR", "/usr/include/wireshark/")
   if wireshark_include:
       conf.env.append_unique('CXXFLAGS', [ '-I' + wireshark_include ])
@@ -32,7 +30,6 @@ def configure(conf):
   if glib_config_include:
       conf.env.append_unique('CXXFLAGS', [ '-I' + glib_config_include ])
 
-  #conf.env.append_unique('LINKFLAGS', [wireshark_dir + 'epan/libwireshark.la'])
   conf.env.append_unique('LINKFLAGS', ['-lwireshark', '-lwiretap', '-lwsutil'])
 
 def build(bld):

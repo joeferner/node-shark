@@ -30,6 +30,7 @@ class Dissector : node::ObjectWrap {
 public:
   static void Init(v8::Handle<v8::Object> target);
   static v8::Handle<v8::Value> New(const v8::Arguments& args);
+  ~Dissector();
 
 private:
   Dissector(int linkLayerType);
@@ -42,6 +43,13 @@ private:
 
   int m_linkLayerType;
   capture_file m_cfile;
+  epan_dissect_t m_edt;
+  int m_encap;
+  nstime_t m_first_ts;
+  nstime_t m_prev_dis_ts;
+  nstime_t m_prev_cap_ts;
+  guint32 m_cum_bytes;
+  gint64 m_data_offset;
 };
 
 #endif
