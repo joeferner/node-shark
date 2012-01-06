@@ -19,6 +19,7 @@ struct TreeToObjectData {
   v8::Local<v8::Object> root;
   v8::Local<v8::Object> parent;
   const char* parentName;
+  v8::Local<v8::Object> rawPacket;
 };
 
 /*
@@ -81,6 +82,15 @@ struct TreeToObjectData {
   return result.str();
 }
 
+void bufferNullCallback(char *data, void *hint) {
+
+}
+
+v8::Handle<v8::Value> Dissector::sliceBuffer(v8::Handle<v8::Object> buffer, int start, int end) {
+	node::Buffer *b = node::Buffer::New( node::Buffer::Data(buffer) + start, end - start, bufferNullCallback, NULL );
+	return b->handle_;
+}
+
 void Dissector::treeToObject(proto_node *node, gpointer data)
 {
   field_info *fi = PNODE_FINFO(node);
@@ -118,11 +128,14 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
   if(fi->hfinfo->type != FT_PROTOCOL) {
     if (fi->length > 0) {
       if (fi->hfinfo->bitmask!=0) {
-        childObj->Set(v8::String::New("value"), v8::Integer::New(fvalue_get_uinteger(&fi->value)));
+				unsigned int val = fvalue_get_uinteger(&fi->value);
+        childObj->Set(v8::String::New("value"), v8::Integer::New(val));
       }
       else {
-        std::string str = getFieldHexValue(pdata->edt->pi.data_src, fi);
-        childObj->Set(v8::String::New("value"), v8::String::New(str.c_str()));
+        //std::string str = getFieldHexValue(pdata->edt->pi.data_src, fi);
+        //childObj->Set(v8::String::New("value"), v8::String::New(str.c_str()));
+				v8::Handle<v8::Value> slice = sliceBuffer(pdata->rawPacket, posInPacket, posInPacket + fi->length);
+				childObj->Set(v8::String::New("value"), slice);
       }
     }
   }
@@ -236,13 +249,14 @@ Dissector::~Dissector() {
 
   struct wtap_pkthdr whdr;
   guchar *data;
+	v8::Local<v8::Object> dataBuffer;
 
 	whdr.pkt_encap = self->m_encap;
 
 	// no packet information just a buffer
 	if(node::Buffer::HasInstance(args[0])) {
 		v8::Local<v8::Value> dataBufferValue = args[0];
-		v8::Local<v8::Object> dataBuffer = dataBufferValue->ToObject();
+		dataBuffer = dataBufferValue->ToObject();
 		int dataBufferLength = node::Buffer::Length(dataBuffer);
 		data = (guchar*)node::Buffer::Data(dataBuffer);
 		whdr.ts.secs = 0;
@@ -258,7 +272,7 @@ Dissector::~Dissector() {
 		if(dataBufferValue->IsUndefined()) {
 			return v8::ThrowException(v8::Exception::Error(v8::String::New("First argument must contain a member 'data' that is a buffer.")));
 		}
-		v8::Local<v8::Object> dataBuffer = dataBufferValue->ToObject();
+		dataBuffer = dataBufferValue->ToObject();
 		data = (guchar*)node::Buffer::Data(dataBuffer);
 		int dataBufferLength = node::Buffer::Length(dataBuffer);
 
@@ -290,6 +304,8 @@ Dissector::~Dissector() {
   TreeToObjectData pdata;
   pdata.edt = &self->m_edt;
   pdata.root = pdata.parent = v8::Object::New();
+  pdata.root->Set(v8::String::New("rawPacket"), dataBuffer);
+  pdata.rawPacket = dataBuffer;
   pdata.parentName = "";
   proto_tree_children_foreach(self->m_edt.tree, treeToObject, &pdata);
 
