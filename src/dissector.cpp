@@ -223,10 +223,20 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
 		v8::Local<v8::Object> dataBuffer = dataBufferValue->ToObject();
 		data = (guchar*)node::Buffer::Data(dataBuffer);
 		int dataBufferLength = node::Buffer::Length(dataBuffer);
-		whdr.ts.secs = getNumberFromV8Object(packet, "timestampSeconds", 0);
-		whdr.ts.nsecs = getNumberFromV8Object(packet, "timestampMicroseconds", 0);
-		whdr.caplen = getNumberFromV8Object(packet, "capturedLength", dataBufferLength);
-		whdr.len = getNumberFromV8Object(packet, "originalLength", dataBufferLength);
+
+		v8::Local<v8::Value> header = packet->Get(v8::String::New("header"));
+		if(header->IsUndefined()) {
+			whdr.ts.secs = 0;
+			whdr.ts.nsecs = 0;
+			whdr.caplen = dataBufferLength;
+			whdr.len = dataBufferLength;
+		} else {
+			v8::Local<v8::Object> headerObj = header->ToObject();
+			whdr.ts.secs = getNumberFromV8Object(headerObj, "timestampSeconds", 0);
+			whdr.ts.nsecs = getNumberFromV8Object(headerObj, "timestampMicroseconds", 0);
+			whdr.caplen = getNumberFromV8Object(headerObj, "capturedLength", dataBufferLength);
+			whdr.len = getNumberFromV8Object(headerObj, "originalLength", dataBufferLength);
+		}
 	}
 
   frame_data fdata;

@@ -41,14 +41,17 @@ exports['NodeSharkTest'] = nodeunit.testCase({
       0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01
     ]);
     var rawPacket = {
-      timestampSeconds: 10,
-      timestampMicroseconds: 20,
-      capturedLength: buffer.length,
-      originalLength: buffer.length,
+      header: {
+        timestampSeconds: 1325800591,
+        timestampMicroseconds: 379226000,
+        capturedLength: buffer.length,
+        originalLength: buffer.length
+      },
       data: buffer
     };
     var packet = dissector.dissect(rawPacket);
     test.ok(packet["dns"]["Queries"]["mail.live.com: type A, class IN"]);
+    test.equal(packet["frame"]["time"]["showValue"], "Jan  5, 2012 16:56:31.379226000");
     //console.log(util.inspect(packet, true, 10));
     test.done();
   },
@@ -79,14 +82,17 @@ exports['NodeSharkTest'] = nodeunit.testCase({
       0x00, 0x04, 0xd8, 0xef, 0x26, 0x0a
     ]);
     var rawPacket = {
-      timestampSeconds: 10,
-      timestampMicroseconds: 20,
-      capturedLength: buffer.length,
-      originalLength: buffer.length,
+      header: {
+        timestampSeconds: 1325800591,
+        timestampMicroseconds: 379226000,
+        capturedLength: buffer.length,
+        originalLength: buffer.length
+      },
       data: buffer
     };
     var packet = dissector.dissect(rawPacket);
     test.ok(packet["dns"]["Answers"]["www.l.google.com: type A, class IN, addr 74.125.113.103"]);
+    test.equal(packet["frame"]["time"]["showValue"], "Jan  5, 2012 16:56:31.379226000");
     //console.log(util.inspect(packet, true, 10));
     test.done();
   }
