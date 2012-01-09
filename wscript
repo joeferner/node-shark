@@ -38,5 +38,5 @@ def configure(conf):
 def build(bld):
   obj = bld.new_task_gen("cxx", "shlib", "node_addon")
   obj.target = "nodeshark_bindings"
-  obj.source = " ".join(["src/nodeshark.cpp", "src/dissector.cpp", "src/utils.cpp", "src/cfile.cpp"])
+  obj.source = " ".join(["src/nodeshark.cpp", "src/dissector.cpp", "src/dissectorNode.cpp", "src/utils.cpp", "src/cfile.cpp"])
   obj.includes = "src/"

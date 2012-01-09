@@ -1,6 +1,7 @@
 
 #include "nodeshark.h"
 #include "dissector.h"
+#include "dissectorNode.h"
 
 /* static */ v8::Persistent<v8::FunctionTemplate> NodeShark::s_ct;
 
@@ -103,6 +104,7 @@ extern "C" {
   static void init(v8::Handle<v8::Object> target) {
     NodeShark::Init(target);
     Dissector::Init(target);
+    DissectorNode::Init(target);
   }
 
   NODE_MODULE(nodeshark_bindings, init);

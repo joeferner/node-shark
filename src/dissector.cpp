@@ -1,6 +1,7 @@
 
 #include "dissector.h"
 #include "utils.h"
+#include "dissectorNode.h"
 #include <node_buffer.h>
 #include <sstream>
 
@@ -244,7 +245,7 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
   s_ct->InstanceTemplate()->SetInternalFieldCount(1);
   s_ct->SetClassName(v8::String::NewSymbol("Dissector"));
 
-  NODE_SET_PROTOTYPE_METHOD(s_ct, "dissect", dissect);
+  NODE_SET_PROTOTYPE_METHOD(s_ct, "_dissect", dissect);
 
   target->Set(v8::String::NewSymbol("Dissector"), s_ct->GetFunction());
 }
@@ -300,11 +301,16 @@ Dissector::~Dissector() {
 /*static*/ v8::Handle<v8::Value> Dissector::dissect(const v8::Arguments& args) {
   Dissector* self = ObjectWrap::Unwrap<Dissector>(args.This());
 
+	v8::HandleScope handleScope;
   struct wtap_pkthdr whdr;
   guchar *data;
 	v8::Local<v8::Object> dataBuffer;
 
 	whdr.pkt_encap = self->m_encap;
+
+	if(args.Length() != 3) {
+		return v8::ThrowException(v8::Exception::Error(v8::String::New("Dissect takes 3 arguments.")));
+	}
 
 	// no packet information just a buffer
 	if(node::Buffer::HasInstance(args[0])) {
@@ -344,6 +350,18 @@ Dissector::~Dissector() {
 		}
 	}
 
+	// result argument
+	if(!args[1]->IsObject()) {
+		return v8::ThrowException(v8::Exception::Error(v8::String::New("Second argument must contain an object.")));
+	}
+	v8::Local<v8::Object> result = v8::Local<v8::Object>::Cast(args[1]);
+
+	// callback argument
+	if(!args[2]->IsFunction()) {
+		return v8::ThrowException(v8::Exception::Error(v8::String::New("Third argument must contain a callback.")));
+	}
+	v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(args[2]);
+
   frame_data fdata;
 
   self->m_cfile.count++;
@@ -354,18 +372,17 @@ Dissector::~Dissector() {
 	frame_data_set_after_dissect(&fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
 	self->m_data_offset += whdr.caplen;
 
-  TreeToObjectData pdata;
-  pdata.edt = &self->m_edt;
-  pdata.root = pdata.parent = v8::Object::New();
-  pdata.root->Set(v8::String::New("rawPacket"), dataBuffer);
-  pdata.rawPacket = dataBuffer;
-  pdata.parentName = "";
-  proto_tree_children_foreach(self->m_edt.tree, treeToObject, &pdata);
+	v8::Local<v8::Value> callbackArgs[4] = {
+		result,
+		v8::Object::New(), // TODO: should be null
+		DissectorNode::New(&self->m_edt, self->m_edt.tree, result, dataBuffer),
+		dataBuffer };
+	callback->Call(args.This(), 4, callbackArgs);
 
   epan_dissect_cleanup(&self->m_edt);
   frame_data_cleanup(&fdata);
 
-  return pdata.root;
+  return v8::Undefined();
 }
 
 e_prefs* Dissector::readPrefs(v8::Handle<v8::Value> *error) {
