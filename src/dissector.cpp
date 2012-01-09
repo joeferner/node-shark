@@ -22,6 +22,11 @@ struct TreeToObjectData {
   v8::Local<v8::Object> rawPacket;
 };
 
+struct TreeToStringData {
+	epan_dissect_t *edt;
+	v8::Local<v8::String> str;
+};
+
 /*
  * Find the data source for a specified field, and return a pointer
  * to the data in it. Returns NULL if the data is out of bounds.
@@ -82,6 +87,77 @@ struct TreeToObjectData {
   return result.str();
 }
 
+const char* Dissector::fixEscapes(const char* src, char* dest) {
+	const char* read = src;
+	char* write = dest;
+	while(*read) {
+		if(*read == '\\') {
+			read++;
+			switch(*read) {
+				case 't': *write++ = '\t'; read++; break;
+				case 'r': *write++ = '\r'; read++; break;
+				case 'n': *write++ = '\n'; read++; break;
+				default:
+					*write++ = '\\';
+					*write++ = *read++;
+					break;
+			}
+		} else {
+			*write++ = *read++;
+		}
+	}
+	*write++ = '\0';
+	return dest;
+}
+
+void Dissector::treeToString(proto_node *node, gpointer data) {
+  TreeToStringData *pdata = (TreeToStringData*) data;
+
+	int freeName;
+	const char *name = getNodeName(node, NULL, &freeName);
+	char *temp = new char[strlen(name)+1]; // TODO: avoid copy
+	fixEscapes(name, temp);
+	pdata->str = v8::String::Concat(pdata->str, v8::String::New(temp));
+	delete[] temp;
+
+	if (freeName) {
+		g_free((char*)name);
+	}
+}
+
+const char* Dissector::getNodeName(proto_node *node, const char *parentName, int *needsFree) {
+	field_info *fi = PNODE_FINFO(node);
+	const char* name;
+	*needsFree = false;
+	if(!strcmp(fi->hfinfo->abbrev, "text")) {
+		gchar label_str[ITEM_LABEL_LENGTH];
+		if (fi->rep) {
+			name = fi->rep->representation;
+		}
+		else { /* no, make a generic label */
+			name = label_str;
+			proto_item_fill_label(fi, label_str);
+		}
+		if (PROTO_ITEM_IS_GENERATED(node)) {
+			name = g_strdup_printf("[%s]", name);
+			*needsFree = true;
+		}
+	} else {
+		int offset = 0;
+		if(parentName) {
+			int parentNameLength = strlen(parentName);
+			if(!strncmp(fi->hfinfo->abbrev, parentName, parentNameLength)) {
+				offset = parentNameLength;
+				if(fi->hfinfo->abbrev[offset] == '.') {
+					offset++;
+				}
+			}
+		}
+		name = &fi->hfinfo->abbrev[offset];
+	}
+	return name;
+}
+
 void Dissector::treeToObject(proto_node *node, gpointer data)
 {
   field_info *fi = PNODE_FINFO(node);
@@ -95,20 +171,32 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
     posInPacket = fi->start;
   }
 
-  char *showString;
+  char *showString = NULL;
   int showStringChopPos = 0;
-  showString = proto_construct_match_selected_string(fi, pdata->edt);
-  if (showString != NULL) {
-    char *p = strstr(showString, "==");
-    if(p) {
-      showStringChopPos = (int)(p - showString) + 3;
-    }
+	if(!strcmp("tcp.data", fi->hfinfo->abbrev)) {
+		// don't show data of TCP packets
+	} else if(!strcmp("data-text-lines", fi->hfinfo->abbrev)) {
+		// handle these special because this node contains just an array of text strings
+		TreeToStringData toStrData;
+		toStrData.edt = pdata->edt;
+		toStrData.str = v8::String::New("");
+		proto_tree_children_foreach(node, Dissector::treeToString, &toStrData);
+		pdata->parent->Set(v8::String::New("data-text-lines"), toStrData.str);
+		return;
+	} else {
+		showString = proto_construct_match_selected_string(fi, pdata->edt);
+		if (showString != NULL) {
+			char *p = strstr(showString, "==");
+			if(p) {
+				showStringChopPos = (int)(p - showString) + 3;
+			}
 
-    if (showString[strlen(showString)-1] == '"') {
-        showString[strlen(showString)-1] = '\0';
-        showStringChopPos++;
-    }
-  }
+			if (showString[strlen(showString)-1] == '"') {
+					showString[strlen(showString)-1] = '\0';
+					showStringChopPos++;
+			}
+		}
+	}
 
   childObj->Set(v8::String::New("sizeInPacket"), v8::Integer::New(fi->length));
   childObj->Set(v8::String::New("posInPacket"), v8::Integer::New(posInPacket));
@@ -125,34 +213,9 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
     }
   }
 
-	const char *name;
-	int freeName = false;
-	if(!strcmp(fi->hfinfo->abbrev, "text")) {
-		gchar label_str[ITEM_LABEL_LENGTH];
-		if (fi->rep) {
-			name = fi->rep->representation;
-		}
-		else { /* no, make a generic label */
-			name = label_str;
-			proto_item_fill_label(fi, label_str);
-		}
-		if (PROTO_ITEM_IS_GENERATED(node)) {
-			name = g_strdup_printf("[%s]", name);
-			freeName = true;
-		}
-	} else {
-		int offset = 0;
-		int parentNameLength = strlen(pdata->parentName);
-		if(!strncmp(fi->hfinfo->abbrev, pdata->parentName, parentNameLength)) {
-			offset = parentNameLength;
-			if(fi->hfinfo->abbrev[offset] == '.') {
-				offset++;
-			}
-		}
-		name = &fi->hfinfo->abbrev[offset];
-	}
+	int freeName;
+	const char *name = getNodeName(node, pdata->parentName, &freeName);
   pdata->parent->Set(v8::String::New(name), childObj);
-
 	if (freeName) {
 		g_free((char*)name);
 	}
@@ -162,7 +225,7 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
     const char* lastParentName = pdata->parentName;
     pdata->parent = childObj;
     pdata->parentName = fi->hfinfo->abbrev;
-    proto_tree_children_foreach(node, Dissector::treeToObject, data);
+		proto_tree_children_foreach(node, Dissector::treeToObject, data);
     pdata->parent = lastObj;
     pdata->parentName = lastParentName;
   }
