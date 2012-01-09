@@ -43,31 +43,25 @@ exports['HttpTrackerTest'] = nodeunit.testCase({
       test.equal(tcpTracker.sessions[2].packetCount, 15);
 
       test.ok(files["http://www.ethereal.com/"]);
-      test.equal(files["http://www.ethereal.com/"].length, 4609);
+      test.equal(files["http://www.ethereal.com/"].length, 7425);
 
       test.ok(files["http://www.ethereal.com/mm/css/ethereal-3-0.css"]);
       test.equal(files["http://www.ethereal.com/mm/css/ethereal-3-0.css"].length, 4609);
 
       test.ok(files["http://www.ethereal.com/mm/image/elogo-64-trans.gif"]);
-      test.equal(files["http://www.ethereal.com/mm/image/elogo-64-trans.gif"].length, 4609);
 
       test.ok(files["http://www.ethereal.com/mm/image/go-button.gif"]);
-      test.equal(files["http://www.ethereal.com/mm/image/go-button.gif"].length, 4609);
 
       test.ok(files["http://pagead2.googlesyndication.com/pagead/show_ads.js"]);
       test.equal(files["http://pagead2.googlesyndication.com/pagead/show_ads.js"].length, 8020);
 
       test.ok(files["http://www.ethereal.com/mm/image/NISlogo75.gif"]);
-      test.equal(files["http://www.ethereal.com/mm/image/NISlogo75.gif"].length, 4609);
 
       test.ok(files["http://www.ethereal.com/mm/image/front-wind.png"]);
-      test.equal(files["http://www.ethereal.com/mm/image/front-wind.png"].length, 4609);
 
       test.ok(files["http://pagead2.googlesyndication.com/pagead/ads?client=ca-pub-2309191948673629&dt=1099056744465&lmt=1098371814&format=120x600_as&output=html&url=http%3A%2F%2Fwww.ethereal.com%2F&color_bg=FFFFFF&color_text=333333&color_link=000000&color_url=666633&color_border=666633&u_h=768&u_w=1024&u_ah=738&u_aw=1024&u_cd=32&u_tz=-240&u_his=3&u_java=true&u_nplug=14&u_nmime=49"]);
-      test.equal(files["http://pagead2.googlesyndication.com/pagead/ads?client=ca-pub-2309191948673629&dt=1099056744465&lmt=1098371814&format=120x600_as&output=html&url=http%3A%2F%2Fwww.ethereal.com%2F&color_bg=FFFFFF&color_text=333333&color_link=000000&color_url=666633&color_border=666633&u_h=768&u_w=1024&u_ah=738&u_aw=1024&u_cd=32&u_tz=-240&u_his=3&u_java=true&u_nplug=14&u_nmime=49"].length, 4609);
 
       test.ok(files["http://www.ethereal.com/favicon.ico"]);
-      test.equal(files["http://www.ethereal.com/favicon.ico"].length, 4609);
 
       test.done();
     });

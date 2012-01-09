@@ -125,6 +125,34 @@ void Dissector::treeToString(proto_node *node, gpointer data) {
 	}
 }
 
+void Dissector::xmlTreeToString(proto_node *node, gpointer data) {
+	field_info *fi = PNODE_FINFO(node);
+  TreeToStringData *pdata = (TreeToStringData*) data;
+
+	if (fi->rep) {
+		char *temp = new char[strlen(fi->rep->representation)+2]; // TODO: avoid copy
+		fixEscapes(fi->rep->representation, temp);
+		int tempLen = strlen(temp);
+		temp[tempLen] = ' ';
+		temp[tempLen+1] = '\0';
+		pdata->str = v8::String::Concat(pdata->str, v8::String::New(temp));
+	}
+	else {
+		int freeName;
+		const char *name = getNodeName(node, NULL, &freeName);
+		char *temp = new char[strlen(name)+1]; // TODO: avoid copy
+		fixEscapes(name, temp);
+		pdata->str = v8::String::Concat(pdata->str, v8::String::New(temp));
+		delete[] temp;
+
+		if (freeName) {
+			g_free((char*)name);
+		}
+	}
+
+	proto_tree_children_foreach(node, Dissector::xmlTreeToString, pdata);
+}
+
 const char* Dissector::getNodeName(proto_node *node, const char *parentName, int *needsFree) {
 	field_info *fi = PNODE_FINFO(node);
 	const char* name;
@@ -181,6 +209,14 @@ void Dissector::treeToObject(proto_node *node, gpointer data)
 		toStrData.edt = pdata->edt;
 		toStrData.str = v8::String::New("");
 		proto_tree_children_foreach(node, Dissector::treeToString, &toStrData);
+		pdata->parent->Set(v8::String::New("data-text-lines"), toStrData.str);
+		return;
+	} else if(!strcmp("xml", fi->hfinfo->abbrev)) {
+		// handle these special because this node contains just an array of text strings
+		TreeToStringData toStrData;
+		toStrData.edt = pdata->edt;
+		toStrData.str = v8::String::New("");
+		proto_tree_children_foreach(node, Dissector::xmlTreeToString, &toStrData);
 		pdata->parent->Set(v8::String::New("data-text-lines"), toStrData.str);
 		return;
 	} else {
