@@ -40,7 +40,6 @@ private:
   static void treeToObject(proto_node *node, gpointer data);
   static void treeToString(proto_node *node, gpointer data);
   static void xmlTreeToString(proto_node *node, gpointer data);
-  static std::string getFieldHexValue(GSList *src_list, field_info *fi);
   static const guint8 *getFieldData(GSList *src_list, field_info *fi);
   static v8::Handle<v8::Value> sliceBuffer(v8::Handle<v8::Object> buffer, int start, int end);
   static const char* getNodeName(proto_node *node, const char *parentName, int *needsFree);

@@ -56,37 +56,6 @@ struct TreeToStringData {
 	return NULL;	/* not found */
 }
 
-/*static*/ std::string Dissector::getFieldHexValue(GSList *src_list, field_info *fi)
-{
-	int i;
-	const guint8 *pd;
-  std::ostringstream result;
-
-	if (!fi->ds_tvb)
-		return "";
-
-	if (fi->length > tvb_length_remaining(fi->ds_tvb, fi->start)) {
-		return "field length invalid!";
-	}
-
-	/* Find the data for this field. */
-	pd = getFieldData(src_list, fi);
-
-	if (pd) {
-		/* Print a simple hex dump */
-		for (i = 0 ; i < fi->length; i++) {
-      if(i != 0) {
-        result << " ";
-      }
-      char temp[10];
-			sprintf(temp, "%02x", pd[i]);
-      result << temp;
-		}
-	}
-
-  return result.str();
-}
-
 const char* Dissector::fixEscapes(const char* src, char* dest) {
 	const char* read = src;
 	char* write = dest;
