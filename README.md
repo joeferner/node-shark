@@ -1,6 +1,6 @@
 # nodeshark
 
-Wrapper around libwireshark providing network packet dissection for Node.js
+Wrapper around libwireshark providing network packet dissection for Node.js.
 
 ## Installation
 
