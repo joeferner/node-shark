@@ -48,6 +48,10 @@ You can also use it it conjunction with [pcap-parser](https://github.com/nearinf
 var pcapp = require('pcap-parser');
 
 var parser = new pcapp.Parser('/path/to/file.pcap');
+var dissector;
+parser.on('globalHeader', function(globalHeader) {
+  dissector = new nodeshark.Dissector(globalHeader.linkLayerType);
+});
 parser.on('packet', function(rawPacket) {
   var packet = dissector.dissect(rawPacket);
 });
