@@ -40,7 +40,17 @@ var buffer = new Buffer([
   0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01
 ]);
 var packet = dissector.dissect(buffer);
+```
 
+You can also use it it conjunction with [pcap-parser](https://github.com/nearinfinity/node-pcap-parser).
+```javascript
+var pcapp = require('pcap-parser');
+
+var parser = new pcapp.Parser('/path/to/file.pcap');
+parser.on('packet', function(rawPacket) {
+  var packet = dissector.dissect(rawPacket);
+});
+parser.parse();
 ```
 
 ## License
