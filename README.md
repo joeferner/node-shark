@@ -43,6 +43,7 @@ var packet = dissector.dissect(buffer);
 ```
 
 You can also use it it conjunction with [pcap-parser](https://github.com/nearinfinity/node-pcap-parser).
+
 ```javascript
 var pcapp = require('pcap-parser');
 
