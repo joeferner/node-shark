@@ -102,7 +102,12 @@ endOfRead:
 					showString[strlen(showString)-1] = '\0';
 					showStringChopPos++;
 			}
-      obj->Set(v8::String::New("value"), v8::String::New(&(showString[showStringChopPos])));
+
+      char *theString = &(showString[showStringChopPos]);
+      char *temp = new char[strlen(theString)+2]; // TODO: avoid copy
+      fixEscapes(theString, temp);
+      obj->Set(v8::String::New("value"), v8::String::New(temp));
+      delete[] temp;
 		}
   }
   return obj;
