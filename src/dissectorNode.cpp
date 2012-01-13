@@ -48,6 +48,8 @@ const char* DissectorNode::fixEscapes(const char* src, char* dest) {
 		if(*read == '\\') {
 			read++;
 			switch(*read) {
+        case '\0': goto endOfRead;
+        case '\\': *write++ = '\\'; read++; break;
 				case 't': *write++ = '\t'; read++; break;
 				case 'r': *write++ = '\r'; read++; break;
 				case 'n': *write++ = '\n'; read++; break;
@@ -60,6 +62,7 @@ const char* DissectorNode::fixEscapes(const char* src, char* dest) {
 			*write++ = *read++;
 		}
 	}
+endOfRead:
 	*write++ = '\0';
 	return dest;
 }
@@ -69,7 +72,6 @@ const char* DissectorNode::fixEscapes(const char* src, char* dest) {
   v8::Local<v8::Object> obj = ctor->NewInstance();
   DissectorNode *self = new DissectorNode(edt, node, result, rawPacket);
   obj->SetPointerInInternalField(0, self);
-
   if(node == self->m_edt->tree) {
     obj->Set(v8::String::New("root"), v8::Boolean::New(true));
   }
@@ -100,11 +102,9 @@ const char* DissectorNode::fixEscapes(const char* src, char* dest) {
 					showString[strlen(showString)-1] = '\0';
 					showStringChopPos++;
 			}
-
       obj->Set(v8::String::New("value"), v8::String::New(&(showString[showStringChopPos])));
 		}
   }
-
   return obj;
 }
 
@@ -154,4 +154,3 @@ v8::Handle<v8::Value> DissectorNode::ChildenForEach(const v8::Arguments& args) {
 
   return v8::Undefined();
 }
-
