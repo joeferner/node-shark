@@ -57,7 +57,6 @@ httpTracker.on('responseData', function (http, buffer) {
 
 pcapparser.parse();
 
-
 function evalFields(p) {
   for(var i=0; i<argv.field.length; i++) {
     var f = argv.field[i];

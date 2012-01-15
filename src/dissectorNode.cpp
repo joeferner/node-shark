@@ -68,10 +68,11 @@ endOfRead:
 }
 
 /*static*/ v8::Local<v8::Value> DissectorNode::New(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket, int root) {
+	v8::HandleScope scope;
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
   DissectorNode *self = new DissectorNode(fdata, edt, node, result, rawPacket, root);
-  obj->SetPointerInInternalField(0, self);
+	self->Wrap(obj);
   if(node == self->m_edt->tree) {
     obj->Set(v8::String::New("root"), v8::Boolean::New(true));
   }
@@ -110,7 +111,7 @@ endOfRead:
       delete[] temp;
 		}
   }
-  return obj;
+  return scope.Close(obj);
 }
 
 DissectorNode::DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket, int root) {
