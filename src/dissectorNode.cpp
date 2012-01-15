@@ -106,10 +106,7 @@ endOfRead:
     obj->Set(v8::String::New("abbreviation"), v8::String::New(fi->hfinfo->abbrev));
 
     if (fi->rep) {
-      char *temp = new char[strlen(fi->rep->representation)+2]; // TODO: avoid copy
-      fixEscapes(fi->rep->representation, temp);
-      obj->Set(v8::String::New("representation"), v8::String::New(temp));
-      delete[] temp;
+			obj->SetAccessor(v8::String::New("representation"), representationGetter, representationSetter);
 		}
 
     // Show value
@@ -136,6 +133,28 @@ endOfRead:
   return scope.Close(obj);
 }
 
+/*static*/ v8::Handle<v8::Value> DissectorNode::representationGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {
+	v8::HandleScope scope;
+	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
+	
+	if(self->m_representation.IsEmpty()) {
+		field_info *fi = PNODE_FINFO(self->m_node);
+		char *temp = new char[strlen(fi->rep->representation)+2]; // TODO: avoid copy
+		fixEscapes(fi->rep->representation, temp);
+		self->m_representation = v8::Persistent<v8::String>::New(v8::String::New(temp));
+		delete[] temp;
+	}	
+	
+	return scope.Close(self->m_representation);
+}
+
+/*static*/ void DissectorNode::representationSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info) {
+	v8::HandleScope scope;
+	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
+	self->m_representation.Dispose();
+	self->m_representation = v8::Persistent<v8::Value>::New(value);
+}
+
 DissectorNode::DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket, int root) {
 	m_fdata = fdata;
 	m_root = root;
@@ -146,6 +165,7 @@ DissectorNode::DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node 
 }
 
 DissectorNode::~DissectorNode() {
+	m_representation.Dispose();
 	if(m_root) {
 		epan_dissect_cleanup(m_edt);
 	  frame_data_cleanup(m_fdata);

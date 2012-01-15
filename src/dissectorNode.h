@@ -22,7 +22,9 @@ private:
   static void ChildrenForEachItem(proto_node *node, gpointer data);
   static int getPositionInPacket(proto_node *node, field_info *fi);
   static const char* fixEscapes(const char* src, char* dest);
-
+  static v8::Handle<v8::Value> representationGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
+  static void representationSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
+  
   static v8::Persistent<v8::FunctionTemplate> s_ct;
   int m_root;
   frame_data *m_fdata;
@@ -30,6 +32,7 @@ private:
   proto_node *m_node;
   v8::Local<v8::Value> m_result;
   v8::Local<v8::Object> m_rawPacket;
+  v8::Persistent<v8::Value> m_representation;
 };
 
 #endif
