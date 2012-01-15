@@ -47,7 +47,6 @@ private:
 
   int m_linkLayerType;
   capture_file m_cfile;
-  epan_dissect_t m_edt;
   int m_encap;
   nstime_t m_first_ts;
   nstime_t m_prev_dis_ts;

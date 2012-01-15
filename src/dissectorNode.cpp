@@ -67,10 +67,10 @@ endOfRead:
 	return dest;
 }
 
-/*static*/ v8::Local<v8::Value> DissectorNode::New(epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket) {
+/*static*/ v8::Local<v8::Value> DissectorNode::New(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket, int root) {
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
-  DissectorNode *self = new DissectorNode(edt, node, result, rawPacket);
+  DissectorNode *self = new DissectorNode(fdata, edt, node, result, rawPacket, root);
   obj->SetPointerInInternalField(0, self);
   if(node == self->m_edt->tree) {
     obj->Set(v8::String::New("root"), v8::Boolean::New(true));
@@ -113,11 +113,22 @@ endOfRead:
   return obj;
 }
 
-DissectorNode::DissectorNode(epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket) {
+DissectorNode::DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket, int root) {
+	m_fdata = fdata;
+	m_root = root;
   m_edt = edt;
   m_node = node;
   m_result = result;
   m_rawPacket = rawPacket;
+}
+
+DissectorNode::~DissectorNode() {
+	if(m_root) {
+		epan_dissect_cleanup(m_edt);
+	  frame_data_cleanup(m_fdata);
+		delete m_edt;
+		delete m_fdata;
+	}
 }
 
 void DissectorNode::NotImplementedSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info) {
@@ -127,7 +138,8 @@ void DissectorNode::NotImplementedSetter(v8::Local<v8::String> property, v8::Loc
 void DissectorNode::ChildrenForEachItem(proto_node *node, gpointer data) {
   ChildenForEachData *pdata = (ChildenForEachData*)data;
 
-	v8::Local<v8::Value> callbackArgs[4] = { pdata->result, pdata->_this, DissectorNode::New(pdata->self->m_edt, node, pdata->result, pdata->self->m_rawPacket), pdata->self->m_rawPacket };
+	v8::Local<v8::Value> newNode = DissectorNode::New(pdata->self->m_fdata, pdata->self->m_edt, node, pdata->result, pdata->self->m_rawPacket, false);
+	v8::Local<v8::Value> callbackArgs[4] = { pdata->result, pdata->_this, newNode, pdata->self->m_rawPacket };
 	pdata->callback->Call(pdata->_this, 4, callbackArgs);
 }
 

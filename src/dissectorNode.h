@@ -10,11 +10,12 @@
 class DissectorNode : node::ObjectWrap {
 public:
   static void Init(v8::Handle<v8::Object> target);
-  static v8::Local<v8::Value> New(epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket);
+  static v8::Local<v8::Value> New(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket, int root);
 
 private:
-  DissectorNode(epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket);
-
+  DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Local<v8::Value> result, v8::Local<v8::Object> rawPacket, int root);
+  ~DissectorNode();
+  
   static void NotImplementedSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> AbbreviationGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> ChildenForEach(const v8::Arguments& args);
@@ -23,6 +24,8 @@ private:
   static const char* fixEscapes(const char* src, char* dest);
 
   static v8::Persistent<v8::FunctionTemplate> s_ct;
+  int m_root;
+  frame_data *m_fdata;
   epan_dissect_t *m_edt;
   proto_node *m_node;
   v8::Local<v8::Value> m_result;

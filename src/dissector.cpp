@@ -140,25 +140,23 @@ Dissector::~Dissector() {
 	}
 	v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(args[2]);
 
-  frame_data fdata;
-
+  frame_data *fdata = new frame_data();
+  epan_dissect_t *edt = new epan_dissect_t();
+	
   self->m_cfile.count++;
-  frame_data_init(&fdata, self->m_cfile.count, &whdr, self->m_data_offset, self->m_cum_bytes);
-  epan_dissect_init(&self->m_edt, TRUE, TRUE);
-  frame_data_set_before_dissect(&fdata, &self->m_cfile.elapsed_time, &self->m_first_ts, &self->m_prev_dis_ts, &self->m_prev_cap_ts);
-  epan_dissect_run(&self->m_edt, &self->m_cfile.pseudo_header, data, &fdata, &self->m_cfile.cinfo);
-	frame_data_set_after_dissect(&fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
+  frame_data_init(fdata, self->m_cfile.count, &whdr, self->m_data_offset, self->m_cum_bytes);
+  epan_dissect_init(edt, TRUE, TRUE);
+  frame_data_set_before_dissect(fdata, &self->m_cfile.elapsed_time, &self->m_first_ts, &self->m_prev_dis_ts, &self->m_prev_cap_ts);
+  epan_dissect_run(edt, &self->m_cfile.pseudo_header, data, fdata, &self->m_cfile.cinfo);
+	frame_data_set_after_dissect(fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
 	self->m_data_offset += whdr.caplen;
 
 	v8::Local<v8::Value> callbackArgs[4] = {
 		result,
 		v8::Object::New(), // TODO: should be null
-		DissectorNode::New(&self->m_edt, self->m_edt.tree, result, dataBuffer),
+		DissectorNode::New(fdata, edt, edt->tree, result, dataBuffer, true),
 		dataBuffer };
 	callback->Call(args.This(), 4, callbackArgs);
-
-  epan_dissect_cleanup(&self->m_edt);
-  frame_data_cleanup(&fdata);
 
   return v8::Undefined();
 }

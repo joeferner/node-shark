@@ -4,6 +4,15 @@ Wrapper around libwireshark providing network packet dissection for [node.js](ht
 
 ## Installation
 
+### linux
+
+    $ svn co http://anonsvn.wireshark.org/wireshark/trunk/ wireshark
+    $ cd wireshark
+    $ ./autogen.sh
+    $ ./configure
+    $ make
+    $ sudo make install
+    $ export WIRESHARK_INCLUDE_DIR=[wireshark source directory]
     $ npm install nodeshark
 
 ## Usage
