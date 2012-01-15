@@ -16,4 +16,6 @@
 
 double getNumberFromV8Object(v8::Local<v8::Object> &obj, const char *key, double def);
 
+void strtrim(char *str);
+
 #endif

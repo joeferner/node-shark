@@ -9,6 +9,8 @@
 #include <epan/column.h>
 #include <epan/packet.h>
 #include <epan/plugins.h>
+#include <node_buffer.h>
+#include "utils.h"
 
 /*static*/ v8::Persistent<v8::FunctionTemplate> DissectorNode::s_ct;
 
@@ -73,8 +75,28 @@ endOfRead:
   v8::Local<v8::Object> obj = ctor->NewInstance();
   DissectorNode *self = new DissectorNode(fdata, edt, node, result, rawPacket, root);
 	self->Wrap(obj);
-  if(node == self->m_edt->tree) {
+  if(root) {
     obj->Set(v8::String::New("root"), v8::Boolean::New(true));
+		
+		v8::Local<v8::Object> dataSources = v8::Object::New();
+		for (GSList *src_le = edt->pi.data_src; src_le != NULL; src_le = src_le->next) {
+			data_source *src = (data_source*)src_le->data;
+			char *name = strdup(get_data_source_name(src));
+			char *paren = strchr(name, '(');
+			if(paren) *paren = '\0';
+			strtrim(name);
+			
+			tvbuff_t *tvb = src->tvb;
+			guint length = tvb_length(tvb);
+			const guchar *cp = tvb_get_ptr(tvb, 0, length);
+			
+			node::Buffer *buf = node::Buffer::New(length);
+			memcpy(node::Buffer::Data(buf), cp, length);
+
+			dataSources->Set(v8::String::New(name), buf->handle_);
+			delete[] name;
+		}
+		obj->Set(v8::String::New("dataSources"), dataSources);
   }
 
   field_info *fi = PNODE_FINFO(node);
