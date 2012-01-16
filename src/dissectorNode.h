@@ -34,6 +34,8 @@ private:
   v8::Handle<v8::Value> getDataSourceName(tvbuff_t *tvb);
   static v8::Handle<v8::Value> rawDataGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
   static void rawDataSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
+  v8::Handle<v8::Value> getAbbreviation(proto_node *node);
+  static v8::Handle<v8::Value> getRepresentation(proto_node *node);
   
   static v8::Persistent<v8::FunctionTemplate> s_ct;
   DissectorNode *m_root;

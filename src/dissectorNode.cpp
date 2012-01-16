@@ -108,7 +108,7 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
 		self->m_posInPacket = getPositionInPacket(node, fi);
     obj->Set(v8::String::New("sizeInPacket"), v8::Integer::New(self->m_sizeInPacket));
     obj->Set(v8::String::New("positionInPacket"), v8::Integer::New(self->m_posInPacket));
-    obj->Set(v8::String::New("abbreviation"), v8::String::New(fi->hfinfo->abbrev));
+    obj->Set(v8::String::New("abbreviation"), self->getAbbreviation(node));
 		obj->Set(v8::String::New("dataSource"), self->getDataSourceName(fi->ds_tvb));
 		
     if (fi->rep) {
@@ -124,18 +124,17 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
   return scope.Close(obj);
 }
 
-void DissectorNode::createChildren() {
-	proto_tree_children_foreach(m_node, createChildrenItem, this);
-}
-
-/*static*/ void DissectorNode::createChildrenItem(proto_node *node, gpointer data) {
-	DissectorNode *self = (DissectorNode*)data;
-	
+v8::Handle<v8::Value> DissectorNode::getAbbreviation(proto_node *node) {
+	v8::HandleScope scope;
 	field_info *fi = PNODE_FINFO(node);
 	if(fi) {
 		const char *abbr = fi->hfinfo->abbrev;
-		if(!self->isRoot()) {
-			v8::String::AsciiValue parentAbbr(self->handle_->Get(v8::String::New("abbreviation")));
+		if(strcmp(abbr, "text") == 0) {
+			return scope.Close(getRepresentation(node));
+		}
+
+		if(!isRoot()) {
+			v8::String::AsciiValue parentAbbr(handle_->Get(v8::String::New("abbreviation")));
 			int parentAbbrLen = strlen(*parentAbbr);
 			if(strncmp(abbr, *parentAbbr, parentAbbrLen) == 0
 				 && abbr[parentAbbrLen] == '.') {
@@ -143,9 +142,19 @@ void DissectorNode::createChildren() {
 			}
 		}
 		
-		v8::Local<v8::Object> lazyNode = LazyDissectorNode::New(self->m_fdata, self->m_edt, node);
-		self->handle_->SetAccessor(v8::String::New(abbr), childGetter, childSetter, lazyNode);
+		return scope.Close(v8::String::New(abbr));
 	}
+	return scope.Close(v8::Undefined());
+}
+
+void DissectorNode::createChildren() {
+	proto_tree_children_foreach(m_node, createChildrenItem, this);
+}
+
+/*static*/ void DissectorNode::createChildrenItem(proto_node *node, gpointer data) {
+	DissectorNode *self = (DissectorNode*)data;
+	v8::Local<v8::Object> lazyNode = LazyDissectorNode::New(self->m_fdata, self->m_edt, node);
+	self->handle_->SetAccessor(self->getAbbreviation(node)->ToString(), childGetter, childSetter, lazyNode);
 }
 
 /*static*/ v8::Handle<v8::Value> DissectorNode::childGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {
@@ -201,14 +210,23 @@ void DissectorNode::createChildren() {
 	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
 	
 	if(self->m_representation.IsEmpty()) {
-		field_info *fi = PNODE_FINFO(self->m_node);
-		char *temp = new char[strlen(fi->rep->representation)+2]; // TODO: avoid copy
-		fixEscapes(fi->rep->representation, temp);
-		self->m_representation = v8::Persistent<v8::String>::New(v8::String::New(temp));
-		delete[] temp;
+		self->m_representation = v8::Persistent<v8::String>::New(getRepresentation(self->m_node)->ToString());
 	}	
 	
 	return scope.Close(self->m_representation);
+}
+
+/*static*/ v8::Handle<v8::Value> DissectorNode::getRepresentation(proto_node *node) {
+	v8::HandleScope scope;
+	field_info *fi = PNODE_FINFO(node);
+	if(fi && fi->rep) {
+		char *temp = new char[strlen(fi->rep->representation)+2]; // TODO: avoid copy
+		fixEscapes(fi->rep->representation, temp);
+		v8::Local<v8::String> result = v8::String::New(temp);
+		delete[] temp;
+		return scope.Close(result);
+	}
+	return scope.Close(v8::Undefined());
 }
 
 /*static*/ void DissectorNode::representationSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info) {
