@@ -48,11 +48,18 @@ pcapparser.on('globalHeader', function(globalHeader) {
 pcapparser.on('packet', function (rawPacket) {
   var packet = dissector.dissect(rawPacket);
   evalFields(packet);
-  //tcpTracker.track(packet);
+  tcpTracker.track(packet);
 });
 
 httpTracker.on('responseData', function (http, buffer) {
+  //console.log(http);
   evalFields(http);
+  for(var i=0; i<argv.field.length; i++) {
+    var f = argv.field[i];
+    if(f == 'responseData' && buffer) {
+      console.log(buffer.toString());
+    }
+  }
 });
 
 pcapparser.parse();
