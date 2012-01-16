@@ -2,6 +2,7 @@
 #include "nodeshark.h"
 #include "dissector.h"
 #include "dissectorNode.h"
+#include "lazyDissectorNode.h"
 
 /* static */ v8::Persistent<v8::FunctionTemplate> NodeShark::s_ct;
 
@@ -105,6 +106,7 @@ extern "C" {
     NodeShark::Init(target);
     Dissector::Init(target);
     DissectorNode::Init(target);
+    LazyDissectorNode::Init(target);
   }
 
   NODE_MODULE(nodeshark_bindings, init);

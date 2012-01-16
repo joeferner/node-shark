@@ -86,7 +86,7 @@ Dissector::~Dissector() {
 
 	whdr.pkt_encap = self->m_encap;
 
-	if(args.Length() != 3) {
+	if(args.Length() != 1) {
 		return v8::ThrowException(v8::Exception::Error(v8::String::New("Dissect takes 3 arguments.")));
 	}
 
@@ -128,18 +128,6 @@ Dissector::~Dissector() {
 		}
 	}
 
-	// result argument
-	if(!args[1]->IsObject()) {
-		return v8::ThrowException(v8::Exception::Error(v8::String::New("Second argument must contain an object.")));
-	}
-	v8::Local<v8::Object> result = v8::Local<v8::Object>::Cast(args[1]);
-
-	// callback argument
-	if(!args[2]->IsFunction()) {
-		return v8::ThrowException(v8::Exception::Error(v8::String::New("Third argument must contain a callback.")));
-	}
-	v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(args[2]);
-
   frame_data *fdata = new frame_data();
   epan_dissect_t *edt = new epan_dissect_t();
 	
@@ -151,14 +139,9 @@ Dissector::~Dissector() {
 	frame_data_set_after_dissect(fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
 	self->m_data_offset += whdr.caplen;
 
-	v8::Local<v8::Value> callbackArgs[4] = {
-		result,
-		v8::Object::New(), // TODO: should be null
-		DissectorNode::New(fdata, edt, edt->tree, result, dataBuffer, true),
-		dataBuffer };
-	callback->Call(args.This(), 4, callbackArgs);
-
-  return v8::Undefined();
+	v8::Local<v8::Value> result = DissectorNode::New(fdata, edt, edt->tree, v8::Null());	
+	
+  return handleScope.Close(result);
 }
 
 e_prefs* Dissector::readPrefs(v8::Handle<v8::Value> *error) {
