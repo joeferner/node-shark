@@ -63,11 +63,28 @@ endOfRead:
 	return dest;
 }
 
-/*static*/ v8::Local<v8::Object> DissectorNode::New(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Handle<v8::Value> parent) {
+v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
+	v8::HandleScope scope;
+	for (GSList *src_le = m_edt->pi.data_src; src_le != NULL; src_le = src_le->next) {
+		data_source *src = (data_source*)src_le->data;
+		if(tvb == src->tvb) {
+			char *name = strdup(get_data_source_name(src));
+			char *paren = strchr(name, '(');
+			if(paren) *paren = '\0';
+			strtrim(name);
+			v8::Local<v8::String> result = v8::String::New(name);
+			delete[] name;
+			return scope.Close(result);
+		}
+	}
+	return v8::Undefined();
+}
+
+/*static*/ v8::Local<v8::Object> DissectorNode::New(DissectorNode *root, frame_data *fdata, epan_dissect_t *edt, proto_node *node) {
 	v8::HandleScope scope;
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
-  DissectorNode *self = new DissectorNode(fdata, edt, node, parent);
+  DissectorNode *self = new DissectorNode(root, fdata, edt, node);
 	self->Wrap(obj);	
 	
   if(self->isRoot()) {
@@ -76,15 +93,9 @@ endOfRead:
 		v8::Local<v8::Object> dataSources = v8::Object::New();
 		for (GSList *src_le = edt->pi.data_src; src_le != NULL; src_le = src_le->next) {
 			data_source *src = (data_source*)src_le->data;
-			char *name = strdup(get_data_source_name(src));
-			char *paren = strchr(name, '(');
-			if(paren) *paren = '\0';
-			strtrim(name);
-			
 			tvbuff_t *tvb = src->tvb;
 			v8::Local<v8::Object> lazyDataSource = LazyDataSource::New(self, tvb);
-			dataSources->SetAccessor(v8::String::New(name), dataSourceGetter, dataSourceSetter, lazyDataSource);
-			delete[] name;
+			dataSources->SetAccessor(self->getDataSourceName(src->tvb)->ToString(), dataSourceGetter, dataSourceSetter, lazyDataSource);
 		}
 		obj->Set(v8::String::New("dataSources"), dataSources);
   }
@@ -93,9 +104,9 @@ endOfRead:
   if(fi) {
     obj->Set(v8::String::New("sizeInPacket"), v8::Integer::New(fi->length));
     obj->Set(v8::String::New("positionInPacket"), v8::Integer::New(getPositionInPacket(node, fi)));
-		v8::String::AsciiValue parentAbbr(self->m_parent->ToObject()->Get(v8::String::New("abbreviation")));
     obj->Set(v8::String::New("abbreviation"), v8::String::New(fi->hfinfo->abbrev));
-
+		obj->Set(v8::String::New("dataSource"), self->getDataSourceName(fi->ds_tvb));
+		
     if (fi->rep) {
 			obj->SetAccessor(v8::String::New("representation"), representationGetter, representationSetter);
 		}
@@ -142,7 +153,7 @@ void DissectorNode::createChildren() {
 		//printf("***** create child: %s\n", *propertyStr);
 		
 		LazyDissectorNode *lazyNode = node::ObjectWrap::Unwrap<LazyDissectorNode>(info.Data()->ToObject());
-		v8::Local<v8::Object> newNodeObj = New(self->m_fdata, self->m_edt, lazyNode->getProtoNode(), self->handle_);
+		v8::Local<v8::Object> newNodeObj = New(self->m_root, self->m_fdata, self->m_edt, lazyNode->getProtoNode());
 		self->m_childStorage->Set(property, newNodeObj);
 		return scope.Close(newNodeObj);
 	}
@@ -235,9 +246,13 @@ void DissectorNode::createChildren() {
 	self->m_value = v8::Persistent<v8::Value>::New(value);
 }
 
-DissectorNode::DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Handle<v8::Value> parent) {
+DissectorNode::DissectorNode(DissectorNode *root, frame_data *fdata, epan_dissect_t *edt, proto_node *node) {
 	m_fdata = fdata;
-	m_parent = parent;
+	if(root == NULL) {
+		m_root = this;
+	} else {
+		m_root = root;
+	}
   m_edt = edt;
   m_node = node;
 	m_childStorage = v8::Persistent<v8::Object>::New(v8::Object::New());

@@ -139,7 +139,7 @@ Dissector::~Dissector() {
 	frame_data_set_after_dissect(fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
 	self->m_data_offset += whdr.caplen;
 
-	v8::Local<v8::Value> result = DissectorNode::New(fdata, edt, edt->tree, v8::Null());	
+	v8::Local<v8::Value> result = DissectorNode::New(NULL, fdata, edt, edt->tree);
 	
   return handleScope.Close(result);
 }

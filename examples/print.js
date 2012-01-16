@@ -48,7 +48,13 @@ pcapparser.on('globalHeader', function(globalHeader) {
 pcapparser.on('packet', function (rawPacket) {
   var packet = dissector.dissect(rawPacket);
   evalFields(packet);
-  tcpTracker.track(packet);
+  /*
+  if(packet['data-text-lines']) {
+    var raw = nodeshark.getRawValue(packet, packet['data-text-lines']);
+    console.log(raw.toString());
+  }
+  */
+  //tcpTracker.track(packet);
 });
 
 httpTracker.on('responseData', function (http, buffer) {
@@ -60,7 +66,12 @@ pcapparser.parse();
 function evalFields(p) {
   for(var i=0; i<argv.field.length; i++) {
     var f = argv.field[i];
-    var str = "p." + f;
+    var str;
+    if(f[0] == '[') {
+      str = "p" + f;
+    } else {
+      str = "p." + f;
+    }
     try {
       var r = eval(str);
       if(r) {

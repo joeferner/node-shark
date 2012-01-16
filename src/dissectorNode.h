@@ -10,11 +10,11 @@
 class DissectorNode : node::ObjectWrap {
 public:
   static void Init(v8::Handle<v8::Object> target);
-  static v8::Local<v8::Object> New(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Handle<v8::Value> parent);
-  bool isRoot() { return m_parent.IsEmpty() || m_parent->IsNull(); }
+  static v8::Local<v8::Object> New(DissectorNode *root, frame_data *fdata, epan_dissect_t *edt, proto_node *node);
+  bool isRoot() { return this == m_root; }
   
 private:
-  DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node *node, v8::Handle<v8::Value> parent);
+  DissectorNode(DissectorNode *root, frame_data *fdata, epan_dissect_t *edt, proto_node *node);
   ~DissectorNode();
   
   static void NotImplementedSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
@@ -31,9 +31,10 @@ private:
   static void childSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> dataSourceGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
   static void dataSourceSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
+  v8::Handle<v8::Value> getDataSourceName(tvbuff_t *tvb);
   
   static v8::Persistent<v8::FunctionTemplate> s_ct;
-  v8::Handle<v8::Value> m_parent;
+  DissectorNode *m_root;
   frame_data *m_fdata;
   epan_dissect_t *m_edt;
   proto_node *m_node;
