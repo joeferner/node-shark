@@ -48,12 +48,6 @@ pcapparser.on('globalHeader', function(globalHeader) {
 pcapparser.on('packet', function (rawPacket) {
   var packet = dissector.dissect(rawPacket);
   evalFields(packet);
-  /*
-  if(packet['data-text-lines']) {
-    var raw = nodeshark.getRawValue(packet, packet['data-text-lines']);
-    console.log(raw.toString());
-  }
-  */
   //tcpTracker.track(packet);
 });
 

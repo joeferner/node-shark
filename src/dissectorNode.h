@@ -32,14 +32,19 @@ private:
   static v8::Handle<v8::Value> dataSourceGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
   static void dataSourceSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
   v8::Handle<v8::Value> getDataSourceName(tvbuff_t *tvb);
+  static v8::Handle<v8::Value> rawDataGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
+  static void rawDataSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
   
   static v8::Persistent<v8::FunctionTemplate> s_ct;
   DissectorNode *m_root;
   frame_data *m_fdata;
   epan_dissect_t *m_edt;
   proto_node *m_node;
+  int m_sizeInPacket;
+  int m_posInPacket;
   v8::Persistent<v8::Value> m_representation;
   v8::Persistent<v8::Value> m_value;
+  v8::Persistent<v8::Value> m_rawData;
   v8::Persistent<v8::Object> m_childStorage;
   v8::Persistent<v8::Object> m_dataSourceStorage;
 };
