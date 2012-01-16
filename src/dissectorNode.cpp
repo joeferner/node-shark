@@ -12,6 +12,7 @@
 #include <node_buffer.h>
 #include "utils.h"
 #include "lazyDissectorNode.h"
+#include "lazyDataSource.h"
 
 /*static*/ v8::Persistent<v8::FunctionTemplate> DissectorNode::s_ct;
 
@@ -81,12 +82,8 @@ endOfRead:
 			strtrim(name);
 			
 			tvbuff_t *tvb = src->tvb;
-			guint length = tvb_length(tvb);
-			const guchar *cp = tvb_get_ptr(tvb, 0, length);
-			node::Buffer *buf = node::Buffer::New(length);
-			memcpy(node::Buffer::Data(buf), cp, length);
-
-			dataSources->Set(v8::String::New(name), buf->handle_);
+			v8::Local<v8::Object> lazyDataSource = LazyDataSource::New(self, tvb);
+			dataSources->SetAccessor(v8::String::New(name), dataSourceGetter, dataSourceSetter, lazyDataSource);
 			delete[] name;
 		}
 		obj->Set(v8::String::New("dataSources"), dataSources);
@@ -142,7 +139,7 @@ void DissectorNode::createChildren() {
 		return scope.Close(self->m_childStorage->Get(property));
 	} else {
 		//v8::String::AsciiValue propertyStr(property);
-		//printf("create child: %s\n", *propertyStr);
+		//printf("***** create child: %s\n", *propertyStr);
 		
 		LazyDissectorNode *lazyNode = node::ObjectWrap::Unwrap<LazyDissectorNode>(info.Data()->ToObject());
 		v8::Local<v8::Object> newNodeObj = New(self->m_fdata, self->m_edt, lazyNode->getProtoNode(), self->handle_);
@@ -155,6 +152,28 @@ void DissectorNode::createChildren() {
 	v8::HandleScope scope;
 	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
 	self->m_childStorage->Set(property, value);
+}
+
+/*static*/ v8::Handle<v8::Value> DissectorNode::dataSourceGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {
+	v8::HandleScope scope;
+	LazyDataSource *lazyDataSource = node::ObjectWrap::Unwrap<LazyDataSource>(info.Data()->ToObject());
+	DissectorNode *self = lazyDataSource->getParent();
+	if(self->m_dataSourceStorage->Has(property)) {
+		return scope.Close(self->m_dataSourceStorage->Get(property));
+	} else {
+		//v8::String::AsciiValue propertyStr(property);
+		//printf("***** create datasource: %s\n", *propertyStr);
+		
+		node::Buffer *buf = lazyDataSource->createBuffer();
+		self->m_dataSourceStorage->Set(property, buf->handle_);
+		return scope.Close(buf->handle_);
+	}
+}
+
+/*static*/ void DissectorNode::dataSourceSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info) {
+	v8::HandleScope scope;
+	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
+	self->m_dataSourceStorage->Set(property, value);
 }
 
 /*static*/ v8::Handle<v8::Value> DissectorNode::representationGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {
@@ -222,12 +241,14 @@ DissectorNode::DissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node 
   m_edt = edt;
   m_node = node;
 	m_childStorage = v8::Persistent<v8::Object>::New(v8::Object::New());
+	m_dataSourceStorage = v8::Persistent<v8::Object>::New(v8::Object::New());
 }
 
 DissectorNode::~DissectorNode() {
 	m_representation.Dispose();
 	m_value.Dispose();
 	m_childStorage.Dispose();
+	m_dataSourceStorage.Dispose();
 	if(isRoot()) {
 		epan_dissect_cleanup(m_edt);
 	  frame_data_cleanup(m_fdata);

@@ -29,6 +29,8 @@ private:
   static void createChildrenItem(proto_node *node, gpointer data);
   static v8::Handle<v8::Value> childGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
   static void childSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Value> dataSourceGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
+  static void dataSourceSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
   
   static v8::Persistent<v8::FunctionTemplate> s_ct;
   v8::Handle<v8::Value> m_parent;
@@ -38,6 +40,7 @@ private:
   v8::Persistent<v8::Value> m_representation;
   v8::Persistent<v8::Value> m_value;
   v8::Persistent<v8::Object> m_childStorage;
+  v8::Persistent<v8::Object> m_dataSourceStorage;
 };
 
 #endif
