@@ -87,11 +87,11 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
   DissectorNode *self = new DissectorNode(root, fdata, edt, node);
-	self->Wrap(obj);	
-	
+	self->Wrap(obj);
+
   if(self->isRoot()) {
     obj->Set(v8::String::New("root"), v8::Boolean::New(true));
-		
+
 		v8::Local<v8::Object> dataSources = v8::Object::New();
 		for (GSList *src_le = edt->pi.data_src; src_le != NULL; src_le = src_le->next) {
 			data_source *src = (data_source*)src_le->data;
@@ -110,7 +110,7 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
     obj->Set(v8::String::New("positionInPacket"), v8::Integer::New(self->m_posInPacket));
     obj->Set(v8::String::New("abbreviation"), self->getAbbreviation(node));
 		obj->Set(v8::String::New("dataSource"), self->getDataSourceName(fi->ds_tvb));
-		
+
     if (fi->rep) {
 			obj->SetAccessor(v8::String::New("representation"), representationGetter, representationSetter);
 		}
@@ -118,9 +118,9 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
 		obj->SetAccessor(v8::String::New("value"), valueGetter, valueSetter);
 		obj->SetAccessor(v8::String::New("rawData"), rawDataGetter, rawDataSetter);
   }
-	
+
 	self->createChildren();
-	
+
   return scope.Close(obj);
 }
 
@@ -141,7 +141,7 @@ v8::Handle<v8::Value> DissectorNode::getAbbreviation(proto_node *node) {
 				abbr += parentAbbrLen + 1;
 			}
 		}
-		
+
 		return scope.Close(v8::String::New(abbr));
 	}
 	return scope.Close(v8::Undefined());
@@ -167,7 +167,7 @@ void DissectorNode::createChildren() {
 			v8::String::AsciiValue propertyStr(property);
 			printf("***** create child: %s\n", *propertyStr);
 		#endif
-		
+
 		LazyDissectorNode *lazyNode = node::ObjectWrap::Unwrap<LazyDissectorNode>(info.Data()->ToObject());
 		v8::Local<v8::Object> newNodeObj = New(self->m_root, self->m_fdata, self->m_edt, lazyNode->getProtoNode());
 		self->m_childStorage->Set(property, newNodeObj);
@@ -192,8 +192,8 @@ void DissectorNode::createChildren() {
 			v8::String::AsciiValue propertyStr(property);
 			printf("***** create datasource: %s\n", *propertyStr);
 		#endif
-		
-		node::Buffer *buf = lazyDataSource->createBuffer();		
+
+		node::Buffer *buf = lazyDataSource->createBuffer();
 		self->m_dataSourceStorage->Set(property, buf->handle_);
 		return scope.Close(buf->handle_);
 	}
@@ -208,11 +208,11 @@ void DissectorNode::createChildren() {
 /*static*/ v8::Handle<v8::Value> DissectorNode::representationGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {
 	v8::HandleScope scope;
 	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
-	
+
 	if(self->m_representation.IsEmpty()) {
 		self->m_representation = v8::Persistent<v8::String>::New(getRepresentation(self->m_node)->ToString());
-	}	
-	
+	}
+
 	return scope.Close(self->m_representation);
 }
 
@@ -239,7 +239,7 @@ void DissectorNode::createChildren() {
 /*static*/ v8::Handle<v8::Value> DissectorNode::valueGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {
 	v8::HandleScope scope;
 	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
-	
+
 	if(self->m_value.IsEmpty()) {
 		field_info *fi = PNODE_FINFO(self->m_node);
     int showStringChopPos = 0;
@@ -262,7 +262,7 @@ void DissectorNode::createChildren() {
       delete[] temp;
 		}
 	}
-	
+
 	return scope.Close(self->m_value);
 }
 
@@ -276,24 +276,27 @@ void DissectorNode::createChildren() {
 /*static*/ v8::Handle<v8::Value> DissectorNode::rawDataGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {
 	v8::HandleScope scope;
 	DissectorNode *self = node::ObjectWrap::Unwrap<DissectorNode>(info.This());
-	
+
 	if(self->m_rawData.IsEmpty()) {
 		#ifdef SHOW_CREATES
 			v8::String::AsciiValue propertyStr(property);
 			printf("***** create rawData: %s\n", *propertyStr);
 		#endif
-		
+
 		v8::Local<v8::Object> dataSources = self->m_root->handle_->Get(v8::String::New("dataSources"))->ToObject();
-		v8::Local<v8::String> dataSourceName = self->handle_->Get(v8::String::New("dataSource"))->ToString();
-		v8::Local<v8::Object> dataSource = dataSources->Get(dataSourceName)->ToObject();
-		v8::Local<v8::Object> sliceFn = dataSource->Get(v8::String::New("slice"))->ToObject();
-		v8::Handle<v8::Value> sliceArgs[] = {
-			v8::Integer::New(self->m_posInPacket),
-			v8::Integer::New(self->m_posInPacket + self->m_sizeInPacket)
-		};
-		self->m_rawData = v8::Persistent<v8::Value>::New(sliceFn->CallAsFunction(dataSource, 2, sliceArgs));
+    v8::Local<v8::Value> dataSourceNameObj = self->handle_->Get(v8::String::New("dataSource"));
+    if(!dataSourceNameObj->IsNull() && !dataSourceNameObj->IsUndefined()) {
+      v8::Local<v8::String> dataSourceName = dataSourceNameObj->ToString();
+      v8::Local<v8::Object> dataSource = dataSources->Get(dataSourceName)->ToObject();
+      v8::Local<v8::Object> sliceFn = dataSource->Get(v8::String::New("slice"))->ToObject();
+      v8::Handle<v8::Value> sliceArgs[] = {
+        v8::Integer::New(self->m_posInPacket),
+        v8::Integer::New(self->m_posInPacket + self->m_sizeInPacket)
+      };
+      self->m_rawData = v8::Persistent<v8::Value>::New(sliceFn->CallAsFunction(dataSource, 2, sliceArgs));
+    }
 	}
-	
+
 	return scope.Close(self->m_rawData);
 }
 
