@@ -129,20 +129,22 @@ v8::Handle<v8::Value> DissectorNode::getAbbreviation(proto_node *node) {
 	field_info *fi = PNODE_FINFO(node);
 	if(fi) {
 		const char *abbr = fi->hfinfo->abbrev;
-		if(strcmp(abbr, "text") == 0) {
-			return scope.Close(getRepresentation(node));
-		}
+    if(abbr) {
+      if(strcmp(abbr, "text") == 0) {
+        return scope.Close(getRepresentation(node));
+      }
 
-		if(!isRoot()) {
-			v8::String::AsciiValue parentAbbr(handle_->Get(v8::String::New("abbreviation")));
-			int parentAbbrLen = strlen(*parentAbbr);
-			if(strncmp(abbr, *parentAbbr, parentAbbrLen) == 0
-				 && abbr[parentAbbrLen] == '.') {
-				abbr += parentAbbrLen + 1;
-			}
-		}
+      if(!isRoot()) {
+        v8::String::AsciiValue parentAbbr(handle_->Get(v8::String::New("abbreviation")));
+        int parentAbbrLen = strlen(*parentAbbr);
+        if(strncmp(abbr, *parentAbbr, parentAbbrLen) == 0
+           && abbr[parentAbbrLen] == '.') {
+          abbr += parentAbbrLen + 1;
+        }
+      }
 
-		return scope.Close(v8::String::New(abbr));
+      return scope.Close(v8::String::New(abbr));
+    }
 	}
 	return scope.Close(v8::Undefined());
 }
