@@ -36,6 +36,7 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
 
   Dissector *self = new Dissector(linkLayerTypeVal);
 
+	memset(&self->m_cfile, 0, sizeof(capture_file));
   cap_file_init(&self->m_cfile);
 
   // read preferences
@@ -50,8 +51,8 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
 
   self->m_cfile.wth = NULL;
   self->m_cfile.f_datalen = 0;
-  self->m_cfile.filename = g_strdup("");
-  self->m_cfile.is_tempfile = FALSE;
+  self->m_cfile.filename = NULL;
+  self->m_cfile.is_tempfile = TRUE;
   self->m_cfile.user_saved = FALSE;
   self->m_cfile.cd_t = WTAP_FILE_UNKNOWN;
   self->m_cfile.count = 0;
@@ -130,7 +131,7 @@ Dissector::~Dissector() {
 
   frame_data *fdata = new frame_data();
   epan_dissect_t *edt = new epan_dissect_t();
-	
+
   self->m_cfile.count++;
   frame_data_init(fdata, self->m_cfile.count, &whdr, self->m_data_offset, self->m_cum_bytes);
   epan_dissect_init(edt, TRUE, TRUE);
@@ -140,7 +141,7 @@ Dissector::~Dissector() {
 	self->m_data_offset += whdr.caplen;
 
 	v8::Local<v8::Value> result = DissectorNode::New(NULL, fdata, edt, edt->tree);
-	
+
   return handleScope.Close(result);
 }
 
