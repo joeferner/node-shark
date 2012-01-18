@@ -36,6 +36,7 @@ private:
   Dissector(int linkLayerType);
   static v8::Persistent<v8::FunctionTemplate> s_ct;
   static v8::Handle<v8::Value> dissect(const v8::Arguments& args);
+  static v8::Handle<v8::Value> close(const v8::Arguments& args);
   e_prefs* readPrefs(v8::Handle<v8::Value> *error);
   static void treeToObject(proto_node *node, gpointer data);
   static void treeToString(proto_node *node, gpointer data);

@@ -15,6 +15,11 @@
 #include "lazyDataSource.h"
 
 //#define SHOW_CREATES
+BENCHMARK_DEF_EXTERN(dissectorNodeNew);
+BENCHMARK_DEF_EXTERN(dissectorNodeNewRoot);
+BENCHMARK_DEF_EXTERN(createChildren);
+BENCHMARK_DEF_EXTERN(createChildrenItem);
+BENCHMARK_DEF_EXTERN(getAbbreviation);
 
 /*static*/ v8::Persistent<v8::FunctionTemplate> DissectorNode::s_ct;
 
@@ -84,12 +89,14 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
 
 /*static*/ v8::Local<v8::Object> DissectorNode::New(DissectorNode *root, frame_data *fdata, epan_dissect_t *edt, proto_node *node) {
 	v8::HandleScope scope;
+  BENCHMARK_START(dissectorNodeNew);
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
   DissectorNode *self = new DissectorNode(root, fdata, edt, node);
 	self->Wrap(obj);
 
   if(self->isRoot()) {
+    BENCHMARK_START(dissectorNodeNewRoot);
     obj->Set(v8::String::New("root"), v8::Boolean::New(true));
 
 		v8::Local<v8::Object> dataSources = v8::Object::New();
@@ -100,6 +107,7 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
 			dataSources->SetAccessor(self->getDataSourceName(src->tvb)->ToString(), dataSourceGetter, dataSourceSetter, lazyDataSource);
 		}
 		obj->Set(v8::String::New("dataSources"), dataSources);
+    BENCHMARK_END(dissectorNodeNewRoot);
   }
 
   field_info *fi = PNODE_FINFO(node);
@@ -121,17 +129,21 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
 
 	self->createChildren();
 
+  BENCHMARK_END(dissectorNodeNew);
   return scope.Close(obj);
 }
 
 v8::Handle<v8::Value> DissectorNode::getAbbreviation(proto_node *node) {
 	v8::HandleScope scope;
+  BENCHMARK_START(getAbbreviation);
 	field_info *fi = PNODE_FINFO(node);
 	if(fi) {
 		const char *abbr = fi->hfinfo->abbrev;
     if(abbr) {
       if(strcmp(abbr, "text") == 0) {
-        return scope.Close(getRepresentation(node));
+        v8::Handle<v8::Value> result = getRepresentation(node);
+        BENCHMARK_END(getAbbreviation);
+        return scope.Close(result);
       }
 
       if(!isRoot()) {
@@ -143,20 +155,28 @@ v8::Handle<v8::Value> DissectorNode::getAbbreviation(proto_node *node) {
         }
       }
 
-      return scope.Close(v8::String::New(abbr));
+      v8::Handle<v8::Value> result = v8::String::New(abbr);
+      BENCHMARK_END(getAbbreviation);
+      return scope.Close(result);
     }
 	}
+  BENCHMARK_END(getAbbreviation);
 	return scope.Close(v8::Undefined());
 }
 
 void DissectorNode::createChildren() {
+  BENCHMARK_START(createChildren);
 	proto_tree_children_foreach(m_node, createChildrenItem, this);
+  BENCHMARK_END(createChildren);
 }
 
 /*static*/ void DissectorNode::createChildrenItem(proto_node *node, gpointer data) {
+  BENCHMARK_START(createChildrenItem);
 	DissectorNode *self = (DissectorNode*)data;
 	v8::Local<v8::Object> lazyNode = LazyDissectorNode::New(self->m_fdata, self->m_edt, node);
-	self->handle_->SetAccessor(self->getAbbreviation(node)->ToString(), childGetter, childSetter, lazyNode);
+  v8::Handle<v8::Value> abbreviationVal = self->getAbbreviation(node);
+	self->handle_->SetAccessor(abbreviationVal->ToString(), childGetter, childSetter, lazyNode);
+  BENCHMARK_END(createChildrenItem);
 }
 
 /*static*/ v8::Handle<v8::Value> DissectorNode::childGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info) {

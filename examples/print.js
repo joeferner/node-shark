@@ -51,6 +51,10 @@ pcapparser.on('packet', function (rawPacket) {
   tcpTracker.track(packet);
 });
 
+pcapparser.on('end', function() {
+  dissector.close();
+});
+
 httpTracker.on('responseData', function (http, buffer) {
   //console.log(http);
   evalFields(http);
@@ -67,6 +71,7 @@ pcapparser.parse();
 function evalFields(p) {
   for(var i=0; i<argv.field.length; i++) {
     var f = argv.field[i];
+    if(!f) continue;
     var str;
     if(f[0] == '[') {
       str = "p" + f;

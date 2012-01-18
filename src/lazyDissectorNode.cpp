@@ -1,5 +1,8 @@
 
 #include "lazyDissectorNode.h"
+#include "utils.h"
+
+BENCHMARK_DEF_EXTERN(lazyDissectorNodeNew);
 
 /*static*/ v8::Persistent<v8::FunctionTemplate> LazyDissectorNode::s_ct;
 
@@ -16,11 +19,12 @@
 
 /*static*/ v8::Local<v8::Object> LazyDissectorNode::New(frame_data *fdata, epan_dissect_t *edt, proto_node *node) {
 	v8::HandleScope scope;
+	BENCHMARK_START(lazyDissectorNodeNew);
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
   LazyDissectorNode *self = new LazyDissectorNode(fdata, edt, node);
   self->Wrap(obj);
-  
+  BENCHMARK_END(lazyDissectorNodeNew);
   return scope.Close(obj);
 }
 
@@ -31,6 +35,5 @@ LazyDissectorNode::LazyDissectorNode(frame_data *fdata, epan_dissect_t *edt, pro
 }
 
 LazyDissectorNode::~LazyDissectorNode() {
-  
-}
 
+}

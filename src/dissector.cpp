@@ -5,6 +5,16 @@
 #include <node_buffer.h>
 #include <sstream>
 
+BENCHMARK_GLOBAL_DEF();
+BENCHMARK_DEF(epanDissect);
+BENCHMARK_DEF(dissect);
+BENCHMARK_DEF(dissectorNodeNew);
+BENCHMARK_DEF(dissectorNodeNewRoot);
+BENCHMARK_DEF(createChildren);
+BENCHMARK_DEF(createChildrenItem);
+BENCHMARK_DEF(getAbbreviation);
+BENCHMARK_DEF(lazyDissectorNodeNew);
+
 /* static */ v8::Persistent<v8::FunctionTemplate> Dissector::s_ct;
 
 // the wireshark header file does not declare this as extern "C" so we need to declare it ourselves
@@ -24,12 +34,15 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
   s_ct->SetClassName(v8::String::NewSymbol("Dissector"));
 
   NODE_SET_PROTOTYPE_METHOD(s_ct, "_dissect", dissect);
+	NODE_SET_PROTOTYPE_METHOD(s_ct, "close", close);
 
   target->Set(v8::String::NewSymbol("Dissector"), s_ct->GetFunction());
 }
 
 /*static*/ v8::Handle<v8::Value> Dissector::New(const v8::Arguments& args) {
   v8::HandleScope scope;
+
+	BENCHMARK_GLOBAL_START();
 
   REQ_NUMBER_ARG(0, linkLayerType);
   int linkLayerTypeVal = linkLayerType->Value();
@@ -78,9 +91,11 @@ Dissector::~Dissector() {
 }
 
 /*static*/ v8::Handle<v8::Value> Dissector::dissect(const v8::Arguments& args) {
+	v8::HandleScope handleScope;
+
+	BENCHMARK_START(dissect);
   Dissector* self = ObjectWrap::Unwrap<Dissector>(args.This());
 
-	v8::HandleScope handleScope;
   struct wtap_pkthdr whdr;
   guchar *data;
 	v8::Local<v8::Object> dataBuffer;
@@ -132,6 +147,7 @@ Dissector::~Dissector() {
   frame_data *fdata = new frame_data();
   epan_dissect_t *edt = new epan_dissect_t();
 
+	BENCHMARK_START(epanDissect);
   self->m_cfile.count++;
   frame_data_init(fdata, self->m_cfile.count, &whdr, self->m_data_offset, self->m_cum_bytes);
   epan_dissect_init(edt, TRUE, TRUE);
@@ -139,10 +155,38 @@ Dissector::~Dissector() {
   epan_dissect_run(edt, &self->m_cfile.pseudo_header, data, fdata, &self->m_cfile.cinfo);
 	frame_data_set_after_dissect(fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
 	self->m_data_offset += whdr.caplen;
+	BENCHMARK_END(epanDissect);
 
 	v8::Local<v8::Value> result = DissectorNode::New(NULL, fdata, edt, edt->tree);
 
+	BENCHMARK_END(dissect);
   return handleScope.Close(result);
+}
+
+/*static*/ v8::Handle<v8::Value> Dissector::close(const v8::Arguments& args) {
+	v8::HandleScope handleScope;
+	#ifdef BENCHMARK
+		Dissector* self = node::ObjectWrap::Unwrap<Dissector>(args.This());
+	#endif
+
+	BENCHMARK_GLOBAL_END();
+
+	BENCHMARK_PRINT_START();
+	BENCHMARK_PRINT(dissect);
+	BENCHMARK_PRINT(epanDissect);
+	BENCHMARK_PRINT(dissectorNodeNew);
+	BENCHMARK_PRINT(dissectorNodeNewRoot);
+	BENCHMARK_PRINT(createChildren);
+	BENCHMARK_PRINT(createChildrenItem);
+	BENCHMARK_PRINT(getAbbreviation);
+	BENCHMARK_PRINT(lazyDissectorNodeNew);
+	BENCHMARK_PRINT_END();
+
+	#ifdef BENCHMARK
+		printf("packet count: %d\n", self->m_cfile.count);
+	#endif
+
+	return v8::Undefined();
 }
 
 e_prefs* Dissector::readPrefs(v8::Handle<v8::Value> *error) {
