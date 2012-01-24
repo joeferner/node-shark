@@ -1,3 +1,4 @@
+import os
 import Options, Utils
 from os import unlink, symlink, chdir, environ
 from os.path import exists
