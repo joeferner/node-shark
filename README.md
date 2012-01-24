@@ -27,10 +27,9 @@ $ cd wireshark
 $ ./macosx-setup.sh
 $ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/X11/lib/pkgconfig
 $ ./autogen.sh
-$ mkdir build; cd build
-$ ../configure
+$ ./configure
 $ make -j 3
-$ make install
+$ sudo make install
 
 $ export WIRESHARK_INCLUDE_DIR=[wireshark source directory]
 $ node-waf configure build

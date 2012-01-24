@@ -21,13 +21,18 @@ def configure(conf):
   if wireshark_include:
       conf.env.append_unique('CXXFLAGS', [ '-I' + wireshark_include ])
 
-  glib_include = environ.get("GLIB_INCLUDE_DIR", "/usr/include/glib-2.0/")
-  if glib_include:
-      conf.env.append_unique('CXXFLAGS', [ '-I' + glib_include ])
+  if os.path.exists("/System/Library/Frameworks/"):
+    conf.env.append_unique('CXXFLAGS', [ '-I' + wireshark_include + '/macosx-support-libs/glib-2.31.8/' ])
+    conf.env.append_unique('CXXFLAGS', [ '-I' + wireshark_include + '/macosx-support-libs/glib-2.31.8/glib/' ])
+    conf.env.append_unique('CXXFLAGS', [ '-I' + wireshark_include + '/macosx-support-libs/glib-2.31.8/gmodule/' ])
+  else:
+    glib_include = environ.get("GLIB_INCLUDE_DIR", "/usr/include/glib-2.0/")
+    if glib_include:
+        conf.env.append_unique('CXXFLAGS', [ '-I' + glib_include ])
 
-  glib_config_include = environ.get("GLIB_CONFIG_INCLUDE_DIR", "/usr/lib/i386-linux-gnu/glib-2.0/include/")
-  if glib_config_include:
-      conf.env.append_unique('CXXFLAGS', [ '-I' + glib_config_include ])
+    glib_config_include = environ.get("GLIB_CONFIG_INCLUDE_DIR", "/usr/lib/i386-linux-gnu/glib-2.0/include/")
+    if glib_config_include:
+        conf.env.append_unique('CXXFLAGS', [ '-I' + glib_config_include ])
 
   wireshark_lib = environ.get("WIRESHARK_LIB", "/usr/local/lib/")
   if wireshark_lib:
