@@ -6,7 +6,7 @@ Wrapper around libwireshark providing network packet dissection for [node.js](ht
 
     $ npm install nodeshark
 
-### Build
+### Build linux
 
 ```bash
 $ svn co http://anonsvn.wireshark.org/wireshark/trunk/ wireshark
@@ -15,6 +15,23 @@ $ ./autogen.sh
 $ ./configure
 $ make
 $ sudo make install
+$ export WIRESHARK_INCLUDE_DIR=[wireshark source directory]
+$ node-waf configure build
+```
+
+### Build OSX
+
+```bash
+$ svn co http://anonsvn.wireshark.org/wireshark/trunk/ wireshark
+$ cd wireshark
+$ ./macosx-setup.sh
+$ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/X11/lib/pkgconfig
+$ ./autogen.sh
+$ mkdir build; cd build
+$ ../configure
+$ make -j 3
+$ make install
+$
 $ export WIRESHARK_INCLUDE_DIR=[wireshark source directory]
 $ node-waf configure build
 ```
