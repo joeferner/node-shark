@@ -31,7 +31,7 @@ $ mkdir build; cd build
 $ ../configure
 $ make -j 3
 $ make install
-$
+
 $ export WIRESHARK_INCLUDE_DIR=[wireshark source directory]
 $ node-waf configure build
 ```
