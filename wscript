@@ -18,7 +18,7 @@ def configure(conf):
   conf.env.append_unique('CXXFLAGS', ['-D_LARGEFILE_SOURCE'])
   conf.env.append_unique('CXXFLAGS', ['-DHAVE_CONFIG_H'])
 
-  wireshark_include = environ.get("WIRESHARK_INCLUDE_DIR")
+  wireshark_include = environ.get("WIRESHARK_INCLUDE_DIR", "/usr/include/wireshark/")
   if wireshark_include:
       conf.env.append_unique('CXXFLAGS', [ '-I' + wireshark_include ])
 
