@@ -31,7 +31,9 @@
 
 #include <epan/packet.h>
 
-#include "cfile.h"
+extern "C" {
+  #include "cfile.h"
+}
 
 void
 cap_file_init(capture_file *cf)
