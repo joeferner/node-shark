@@ -40,6 +40,7 @@ def configure(conf):
       conf.env.append_unique('LINKFLAGS', [ '-L' + wireshark_lib ])
 
   conf.env.append_unique('LINKFLAGS', ['-lwireshark', '-lwiretap', '-lwsutil'])
+  conf.env.append_unique('LINKFLAGS', '-Wl,-rpath,' + wireshark_lib);
 
 def build(bld):
   obj = bld.new_task_gen("cxx", "shlib", "node_addon")
