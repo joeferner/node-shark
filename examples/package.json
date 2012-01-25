@@ -4,7 +4,6 @@
   "private": true,
   "dependencies": {
     "optimist": "~0.3.1",
-    "pcap-parser": "~0.0.3",
-    "nodeshark": "~0.0.1"
+    "pcap-parser": "~0.0.3"
   }
 }

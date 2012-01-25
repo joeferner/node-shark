@@ -11,8 +11,10 @@
 #include <ctype.h>
 #include <locale.h>
 #include <limits.h>
-#include <config.h>
-#include <epan/epan.h>
+extern "C" {
+  #include <config.h>
+  #include <epan/epan.h>
+}
 
 class NodeShark : node::ObjectWrap {
 public:

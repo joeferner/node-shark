@@ -11,18 +11,20 @@
 #include <ctype.h>
 #include <locale.h>
 #include <limits.h>
-#include <config.h>
-#include <epan/epan.h>
-#include <wsutil/privileges.h>
-#include <epan/epan_dissect.h>
-#include <epan/to_str.h>
-#include <epan/timestamp.h>
-#include <epan/prefs.h>
-#include <epan/column.h>
-#include <epan/packet.h>
-#include <epan/plugins.h>
-#include <cfile.h>
-#include <log.h>
+extern "C" {
+  #include <config.h>
+  #include <epan/epan.h>
+  #include <wsutil/privileges.h>
+  #include <epan/epan_dissect.h>
+  #include <epan/to_str.h>
+  #include <epan/timestamp.h>
+  #include <epan/prefs.h>
+  #include <epan/column.h>
+  #include <epan/packet.h>
+  #include <epan/plugins.h>
+  #include <cfile.h>
+  #include <log.h>
+}
 #include <glib.h>
 #include <string>
 

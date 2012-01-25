@@ -4,19 +4,21 @@
 
 #include <v8.h>
 #include <node.h>
-#include <config.h>
-#include <epan/epan.h>
+extern "C" {
+  #include <config.h>
+  #include <epan/epan.h>
+}
 
 class DissectorNode : node::ObjectWrap {
 public:
   static void Init(v8::Handle<v8::Object> target);
   static v8::Local<v8::Object> New(DissectorNode *root, frame_data *fdata, epan_dissect_t *edt, proto_node *node);
   bool isRoot() { return this == m_root; }
-  
+
 private:
   DissectorNode(DissectorNode *root, frame_data *fdata, epan_dissect_t *edt, proto_node *node);
   ~DissectorNode();
-  
+
   static void NotImplementedSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> AbbreviationGetter(v8::Local<v8::String> property, const v8::AccessorInfo& info);
   static int getPositionInPacket(proto_node *node, field_info *fi);
@@ -36,7 +38,7 @@ private:
   static void rawDataSetter(v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
   v8::Handle<v8::Value> getAbbreviation(proto_node *node);
   static v8::Handle<v8::Value> getRepresentation(proto_node *node);
-  
+
   static v8::Persistent<v8::FunctionTemplate> s_ct;
   DissectorNode *m_root;
   frame_data *m_fdata;

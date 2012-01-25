@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var optimist = require('optimist');
-var nodeshark = require("nodeshark");
+var nodeshark = require("../");
 var pcapp = require("pcap-parser");
 
 var argv = optimist
