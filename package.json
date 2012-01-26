@@ -14,8 +14,10 @@
   "repositories": [
     { "type": "git", "url": "https://github.com/nearinfinity/node-shark.git" }
   ],
-  "devDependencies": {
+  "dependencies": {
     "mnm": "~0.0.2",
+  },
+  "devDependencies": {
     "nodeunit": "~0.6.4",
     "pcap-parser": "~>0.0.2"
   },

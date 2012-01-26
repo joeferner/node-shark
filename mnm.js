@@ -4,7 +4,7 @@ var path = require('path');
 var Builder = require('mnm');
 var builder = new Builder();
 
-builder.appendUnique('CXXFLAGS', ['-Isrc/']);
+builder.appendUnique('CXXFLAGS', '-Isrc/');
 builder.appendUnique('CXXFLAGS', ['-DHAVE_CONFIG_H']);
 
 var wiresharkInclude = process.env["WIRESHARK_INCLUDE_DIR"] || "/usr/include/wireshark/";
@@ -34,6 +34,5 @@ builder.appendUnique('LINKFLAGS', '-Wl,-rpath,' + wiresharkLib);
 
 builder.target = "nodeshark_bindings";
 builder.appendSourceDir('./src');
-builder.appendUnique('CXXFLAGS', '-Isrc/');
 
 builder.run();
