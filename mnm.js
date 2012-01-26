@@ -36,4 +36,4 @@ builder.target = "nodeshark_bindings";
 builder.appendSourceDir('./src');
 builder.appendUnique('CXXFLAGS', '-Isrc/');
 
-builder.compileAndLink();
+builder.run();
