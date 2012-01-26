@@ -1,6 +1,7 @@
 {
   "name": "nodeshark",
   "description": "Wrapper around libwireshark providing network packet dissection",
+  "author": "Joe Ferner <joe.ferner@nearinfinity.com>",
   "keywords": ["pcap", "parser", "dissect", "wireshark", "packet", "network"],
   "homepage": "https://github.com/nearinfinity/node-shark",
   "version": "0.0.3",
@@ -11,11 +12,9 @@
   ],
   "bugs": { "url": "https://github.com/nearinfinity/node-shark/issues" },
   "licenses": [ { "type" : "MIT" } ],
-  "repositories": [
-    { "type": "git", "url": "https://github.com/nearinfinity/node-shark.git" }
-  ],
+  "repositories": { "type": "git", "url": "https://github.com/nearinfinity/node-shark.git" },
   "dependencies": {
-    "mnm": "~0.0.2",
+    "mnm": "~0.0.2"
   },
   "devDependencies": {
     "nodeunit": "~0.6.4",
@@ -24,5 +23,6 @@
   "scripts": {
     "test": "nodeunit tests/*",
     "install": "node mnm.js build"
-  }
+  },
+  "main": "./index.js"
 }
