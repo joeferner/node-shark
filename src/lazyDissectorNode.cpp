@@ -18,8 +18,8 @@ BENCHMARK_DEF_EXTERN(lazyDissectorNodeNew);
 }
 
 /*static*/ v8::Local<v8::Object> LazyDissectorNode::New(frame_data *fdata, epan_dissect_t *edt, proto_node *node) {
-	v8::HandleScope scope;
-	BENCHMARK_START(lazyDissectorNodeNew);
+  v8::HandleScope scope;
+  BENCHMARK_START(lazyDissectorNodeNew);
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
   LazyDissectorNode *self = new LazyDissectorNode(fdata, edt, node);
@@ -29,7 +29,7 @@ BENCHMARK_DEF_EXTERN(lazyDissectorNodeNew);
 }
 
 LazyDissectorNode::LazyDissectorNode(frame_data *fdata, epan_dissect_t *edt, proto_node *node) {
-	m_fdata = fdata;
+  m_fdata = fdata;
   m_edt = edt;
   m_node = node;
 }

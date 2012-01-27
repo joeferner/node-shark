@@ -16,7 +16,7 @@
 }
 
 /*static*/ v8::Local<v8::Object> LazyDataSource::New(DissectorNode *parent, tvbuff_t *tvb) {
-	v8::HandleScope scope;
+  v8::HandleScope scope;
   v8::Local<v8::Function> ctor = s_ct->GetFunction();
   v8::Local<v8::Object> obj = ctor->NewInstance();
   LazyDataSource *self = new LazyDataSource(parent, tvb);
@@ -26,8 +26,8 @@
 }
 
 LazyDataSource::LazyDataSource(DissectorNode *parent, tvbuff_t *tvb) {
-	m_parent = parent;
-	m_tvb = tvb;
+  m_parent = parent;
+  m_tvb = tvb;
 }
 
 LazyDataSource::~LazyDataSource() {
@@ -35,9 +35,9 @@ LazyDataSource::~LazyDataSource() {
 }
 
 node::Buffer* LazyDataSource::createBuffer() {
-	guint length = tvb_length(m_tvb);
-	const guchar *cp = tvb_get_ptr(m_tvb, 0, length);
-	node::Buffer *buf = node::Buffer::New(length);
-	memcpy(node::Buffer::Data(buf), cp, length);
-	return buf;
+  guint length = tvb_length(m_tvb);
+  const guchar *cp = tvb_get_ptr(m_tvb, 0, length);
+  node::Buffer *buf = node::Buffer::New(length);
+  memcpy(node::Buffer::Data(buf), cp, length);
+  return buf;
 }
