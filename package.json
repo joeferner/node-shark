@@ -4,7 +4,7 @@
   "author": "Joe Ferner <joe.ferner@nearinfinity.com>",
   "keywords": ["pcap", "parser", "dissect", "wireshark", "packet", "network"],
   "homepage": "https://github.com/nearinfinity/node-shark",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "engines": {
     "node": ">=0.6.0"
   },
