@@ -4,15 +4,32 @@
   "author": "Joe Ferner <joe.ferner@nearinfinity.com>",
   "keywords": ["pcap", "parser", "dissect", "wireshark", "packet", "network"],
   "homepage": "https://github.com/nearinfinity/node-shark",
-  "version": "0.0.3",
-  "engines": { "node" : ">=0.6.0" },
+  "version": "0.0.4",
+  "engines": {
+    "node": ">=0.6.0"
+  },
   "maintainers": [
-    { "name": "Jeff Kunkle", "email": "jeff.kunkle@nearinfinity.com" },
-    { "name": "Joe Ferner", "email": "joe.ferner@nearinfinity.com" }
+    {
+      "name": "Jeff Kunkle",
+      "email": "jeff.kunkle@nearinfinity.com"
+    },
+    {
+      "name": "Joe Ferner",
+      "email": "joe.ferner@nearinfinity.com"
+    }
   ],
-  "bugs": { "url": "https://github.com/nearinfinity/node-shark/issues" },
-  "licenses": [ { "type" : "MIT" } ],
-  "repositories": { "type": "git", "url": "https://github.com/nearinfinity/node-shark.git" },
+  "bugs": {
+    "url": "https://github.com/nearinfinity/node-shark/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nearinfinity/node-shark.git"
+  },
   "dependencies": {
     "mnm": "~0.0.2"
   },
