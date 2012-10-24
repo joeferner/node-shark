@@ -5,50 +5,6 @@ var nodeshark = require("../");
 var util = require('util');
 
 exports['DissectorTest'] = nodeunit.testCase({
-  "bad arguments (none)": function(test) {
-    var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
-    try {
-      var packet = dissector._dissect();
-      throw new Error("This should have thrown an error");
-    } catch(e) {
-      test.equal(e.message, "Dissect takes 3 arguments.");
-      test.done();
-    }
-  },
-
-  "bad arguments (first)": function(test) {
-    var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
-    try {
-      var packet = dissector._dissect({}, {}, function(){});
-      throw new Error("This should have thrown an error");
-    } catch(e) {
-      test.equal(e.message, "First argument must contain a member 'data' that is a buffer.");
-      test.done();
-    }
-  },
-
-  "bad arguments (second)": function(test) {
-    var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
-    try {
-      var packet = dissector._dissect(new Buffer([]), "test", function(){});
-      throw new Error("This should have thrown an error");
-    } catch(e) {
-      test.equal(e.message, "Second argument must contain an object.");
-      test.done();
-    }
-  },
-
-  "bad arguments (third)": function(test) {
-    var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
-    try {
-      var packet = dissector._dissect(new Buffer([]), {}, "test");
-      throw new Error("This should have thrown an error");
-    } catch(e) {
-      test.equal(e.message, "Third argument must contain a callback.");
-      test.done();
-    }
-  },
-
   "process just a buffer no packet": function(test) {
     var dissector = new nodeshark.Dissector(nodeshark.LINK_LAYER_TYPE_ETHERNET);
     var buffer = new Buffer([
@@ -125,7 +81,6 @@ exports['DissectorTest'] = nodeunit.testCase({
     };
     var packet = dissector.dissect(rawPacket);
     test.ok(packet["dns"]["Answers"]["www.l.google.com: type A, class IN, addr 74.125.113.103"]);
-    test.equal(packet["frame"]["time"]["value"], "Jan  5, 2012 16:56:31.379226000");
     //console.log(util.inspect(packet, true, 10));
     test.done();
   }

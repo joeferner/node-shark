@@ -49,7 +49,6 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
 
   Dissector *self = new Dissector(linkLayerTypeVal);
 
-  memset(&self->m_cfile, 0, sizeof(capture_file));
   cap_file_init(&self->m_cfile);
 
   // read preferences
@@ -66,7 +65,7 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
   self->m_cfile.f_datalen = 0;
   self->m_cfile.filename = NULL;
   self->m_cfile.is_tempfile = TRUE;
-  self->m_cfile.user_saved = FALSE;
+  self->m_cfile.unsaved_changes = FALSE;
   self->m_cfile.cd_t = WTAP_FILE_UNKNOWN;
   self->m_cfile.count = 0;
   self->m_cfile.drops_known = FALSE;
@@ -78,8 +77,8 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
   self->m_encap = wtap_pcap_encap_to_wtap_encap(self->m_linkLayerType);
 
   nstime_set_unset(&self->m_first_ts);
-  nstime_set_unset(&self->m_prev_dis_ts);
-  nstime_set_unset(&self->m_prev_cap_ts);
+  self->m_prev_dis = NULL;
+  self->m_prev_cap = NULL;
 
   self->m_data_offset = 0;
 
@@ -103,7 +102,7 @@ Dissector::~Dissector() {
   whdr.pkt_encap = self->m_encap;
 
   if(args.Length() != 1) {
-    return v8::ThrowException(v8::Exception::Error(v8::String::New("Dissect takes 3 arguments.")));
+    return v8::ThrowException(v8::Exception::Error(v8::String::New("Dissect takes 1 arguments.")));
   }
 
   // no packet information just a buffer
@@ -151,9 +150,9 @@ Dissector::~Dissector() {
   self->m_cfile.count++;
   frame_data_init(fdata, self->m_cfile.count, &whdr, self->m_data_offset, self->m_cum_bytes);
   epan_dissect_init(edt, TRUE, TRUE);
-  frame_data_set_before_dissect(fdata, &self->m_cfile.elapsed_time, &self->m_first_ts, &self->m_prev_dis_ts, &self->m_prev_cap_ts);
-  epan_dissect_run(edt, &self->m_cfile.pseudo_header, data, fdata, &self->m_cfile.cinfo);
-  frame_data_set_after_dissect(fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
+  frame_data_set_before_dissect(fdata, &self->m_cfile.elapsed_time, &self->m_first_ts, self->m_prev_dis, self->m_prev_cap);
+  epan_dissect_run(edt, &self->m_cfile.phdr, data, fdata, &self->m_cfile.cinfo);
+  frame_data_set_after_dissect(fdata, &self->m_cum_bytes);
   self->m_data_offset += whdr.caplen;
   BENCHMARK_END(epanDissect);
 

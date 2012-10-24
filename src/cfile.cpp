@@ -39,10 +39,10 @@ void
 cap_file_init(capture_file *cf)
 {
   /* Initialize the capture file struct */
+  memset(cf, 0, sizeof(capture_file));
   cf->filename      = NULL;
   cf->source        = NULL;
   cf->is_tempfile   = FALSE;
-  cf->user_saved    = FALSE;
   cf->count         = 0;
   cf->has_snap      = FALSE;
   cf->snap          = WTAP_MAX_PACKET_SIZE;

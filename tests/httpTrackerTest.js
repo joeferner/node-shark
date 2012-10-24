@@ -24,9 +24,10 @@ exports['HttpTrackerTest'] = nodeunit.testCase({
       test.ok(http.response.code, 200);
       files[http.request.fullUri] = true;
     });
-    httpTracker.on("responseData", function(http, buffer) {
-      files[http.request.fullUri] = buffer;
-      test.ok(buffer);
+    httpTracker.on("responseData", function(http) {
+      var rawData = http.response.getRawData();
+      files[http.request.fullUri] = rawData;
+      test.ok(rawData);
     });
 
     var pcapParser = new pcapp.Parser('./test_data/ethereal.com.pcap');
@@ -43,7 +44,7 @@ exports['HttpTrackerTest'] = nodeunit.testCase({
       test.equal(tcpTracker.sessions[2].packetCount, 15);
 
       test.ok(files["http://www.ethereal.com/"]);
-      test.equal(files["http://www.ethereal.com/"].length, 7425);
+      test.equal(files["http://www.ethereal.com/"].length, 8066);
 
       test.ok(files["http://www.ethereal.com/mm/css/ethereal-3-0.css"]);
       test.equal(files["http://www.ethereal.com/mm/css/ethereal-3-0.css"].length, 4609);

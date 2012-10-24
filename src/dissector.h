@@ -52,8 +52,8 @@ private:
   capture_file m_cfile;
   int m_encap;
   nstime_t m_first_ts;
-  nstime_t m_prev_dis_ts;
-  nstime_t m_prev_cap_ts;
+  frame_data *m_prev_dis;
+  frame_data *m_prev_cap;
   guint32 m_cum_bytes;
   gint64 m_data_offset;
 };
