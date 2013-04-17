@@ -74,7 +74,7 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
   v8::HandleScope scope;
   for (GSList *src_le = m_edt->pi.data_src; src_le != NULL; src_le = src_le->next) {
     data_source *src = (data_source*)src_le->data;
-    if(tvb == get_data_source_tvb(src)) {
+    if(tvb == src->tvb) {
       char *name = strdup(get_data_source_name(src));
       char *paren = strchr(name, '(');
       if(paren) *paren = '\0';
@@ -102,9 +102,9 @@ v8::Handle<v8::Value> DissectorNode::getDataSourceName(tvbuff_t *tvb) {
     v8::Local<v8::Object> dataSources = v8::Object::New();
     for (GSList *src_le = edt->pi.data_src; src_le != NULL; src_le = src_le->next) {
       data_source *src = (data_source*)src_le->data;
-      tvbuff_t *tvb = get_data_source_tvb(src);
+      tvbuff_t *tvb = src->tvb;
       v8::Local<v8::Object> lazyDataSource = LazyDataSource::New(self, tvb);
-      dataSources->SetAccessor(self->getDataSourceName(get_data_source_tvb(src))->ToString(), dataSourceGetter, dataSourceSetter, lazyDataSource);
+      dataSources->SetAccessor(self->getDataSourceName(src->tvb)->ToString(), dataSourceGetter, dataSourceSetter, lazyDataSource);
     }
     obj->Set(v8::String::New("dataSources"), dataSources);
     BENCHMARK_END(dissectorNodeNewRoot);
