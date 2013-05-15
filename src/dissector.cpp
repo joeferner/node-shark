@@ -72,7 +72,7 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
     return *error;
   }
   // read disabled_protocols
-  dp_read= self->readDisabledProtos(error);
+//  dp_read= self->readDisabledProtos(error);
 
   // Build the column format array
   build_column_format_array(&self->m_cfile.cinfo, prefs->num_cols, TRUE);
@@ -116,7 +116,7 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
 
   /* disable dissectors as per list read above from disabled_protocolls files */
   if (dp_read) {
-   set_disabled_protos_list();
+//   set_disabled_protos_list();
   }
 
   nstime_set_unset(&self->m_first_ts);
