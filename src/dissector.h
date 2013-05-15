@@ -40,6 +40,7 @@ private:
   static v8::Handle<v8::Value> dissect(const v8::Arguments& args);
   static v8::Handle<v8::Value> close(const v8::Arguments& args);
   e_prefs* readPrefs(v8::Handle<v8::Value> *error);
+  int readDisabledProtos(v8::Handle<v8::Value> *error);
   static void treeToObject(proto_node *node, gpointer data);
   static void treeToString(proto_node *node, gpointer data);
   static void xmlTreeToString(proto_node *node, gpointer data);
@@ -52,8 +53,8 @@ private:
   capture_file m_cfile;
   int m_encap;
   nstime_t m_first_ts;
-  frame_data *m_prev_dis;
-  frame_data *m_prev_cap;
+  nstime_t m_prev_dis_ts;
+  nstime_t m_prev_cap_ts;
   guint32 m_cum_bytes;
   gint64 m_data_offset;
 };
