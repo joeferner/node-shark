@@ -1,17 +1,22 @@
+#  
 # 
-#
-# linking on Ubuntu 10.04
-#  #export WIRESHARK_LIB=/usr/lib/wireshark/
-#  export WIRESHARK_LIB=/usr/local/lib/
 
 {
  'conditions': [
   ['OS=="linux"', {
+   # on Ubuntu 10.04 LTS and 12.04.2 LTS: install package wireshark-dev_1.x.y_amd64
+   # for header files and 
+   #  #export WIRESHARK_LIB=/usr/lib/wireshark/
+   #  export WIRESHARK_LIB=/usr/local/lib/
    'variables': {
-    'wireshark_include_dir': '/home/rs/Gremlins/wireshark/wireshark-1.8.5/',
+    #'wireshark_include_dir': '/home/rs/Gremlins/wireshark/wireshark-1.8.5/',
+    'wireshark_include_dir': '/home/rs/Gremlins/wireshark/wireshark-1.8.5-JDSU/',
     #'wireshark_include_dir': '/home/rs/Gremlins/wireshark/wireshark-1.9.x.backupJDSU/',
+    #'wireshark_include_dir': '/usr/include/wireshark/',
     'glib_include_dir': '/usr/include/glib-2.0/',
-    'glib_config_include_dir': '/usr/lib/glib-2.0/include/',
+    #'glib_config_include_dir': '/usr/lib/glib-2.0/include/',
+    'glib_config_include_dir': '/usr/lib/x86_64-linux-gnu/glib-2.0/include',
+    # headers installed by package wireshark-dev_1.x.y_amd64
     #'wireshark_lib': '/usr/local/lib/',
     'wireshark_lib': '/usr/lib/wireshark/',
    },

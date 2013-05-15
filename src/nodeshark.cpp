@@ -111,5 +111,5 @@ extern "C" {
     LazyDataSource::Init(target);
   }
 
-  NODE_MODULE(nodeshark_bindings, init);
+  NODE_MODULE(nodeshark, init);
 }
