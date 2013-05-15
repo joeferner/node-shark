@@ -31,7 +31,6 @@
     "url": "git://github.com/nearinfinity/node-shark.git"
   },
   "dependencies": {
-    "mnm": "~0.0.2"
   },
   "devDependencies": {
     "nodeunit": "~0.6.4",
@@ -41,5 +40,6 @@
     "test": "nodeunit tests/*",
     "install": "node mnm.js build"
   },
-  "main": "./index.js"
+  "main": "./index.js",
+  "gypfile": true
 }

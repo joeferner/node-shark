@@ -4,6 +4,10 @@
 #include "dissectorNode.h"
 #include <node_buffer.h>
 #include <sstream>
+#include "disabled_protos.h"
+
+/* for string manipulation as input for prefs_set_pref() */
+#include <glib.h>
 
 BENCHMARK_GLOBAL_DEF();
 BENCHMARK_DEF(epanDissect);
@@ -21,6 +25,11 @@ BENCHMARK_DEF(lazyDissectorNodeNew);
 extern "C" {
   extern int wtap_pcap_encap_to_wtap_encap(int encap);
 };
+
+/* from wireshark/epan/prefs.h */
+//extern "C" {
+//  extern prefs_set_pref_e prefs_set_pref(char *prefarg);
+//};
 
 Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
 }
@@ -41,6 +50,11 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
 
 /*static*/ v8::Handle<v8::Value> Dissector::New(const v8::Arguments& args) {
   v8::HandleScope scope;
+  char errorString[1000];
+  dissector_handle_t dhandle;
+  prefs_set_pref_e pref_e;
+  int dp_read;
+  GString *pref_str;
 
   BENCHMARK_GLOBAL_START();
 
@@ -57,6 +71,8 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
   if(prefs == NULL) {
     return *error;
   }
+  // read disabled_protocols
+//  dp_read= self->readDisabledProtos(error);
 
   // Build the column format array
   build_column_format_array(&self->m_cfile.cinfo, prefs->num_cols, TRUE);
@@ -74,11 +90,38 @@ Dissector::Dissector(int linkLayerType) : m_linkLayerType(linkLayerType) {
   self->m_cfile.snap = WTAP_MAX_PACKET_SIZE;
   nstime_set_zero(&self->m_cfile.elapsed_time);
 
-  self->m_encap = wtap_pcap_encap_to_wtap_encap(self->m_linkLayerType);
+  /*self->m_encap = wtap_pcap_encap_to_wtap_encap(self->m_linkLayerType);*/
+  /* see set_link_type() in http://anonsvn.wireshark.org/viewvc/trunk-1.8/rawshark.c?revision=48199&view=co */
+  #define LINK_LAYER_TYPE_ETHERNET 1
+  #define PROTO_FRP 5001
+  if (self->m_linkLayerType == LINK_LAYER_TYPE_ETHERNET) {
+   self->m_encap = wtap_pcap_encap_to_wtap_encap(self->m_linkLayerType);
+  } else if (self->m_linkLayerType == PROTO_FRP) {
+   dhandle= find_dissector("frp");
+   if (dhandle) {
+    self->m_encap = WTAP_ENCAP_USER0;
+    /* "User 0 (DLT=147)","frp","0","","0",""     see ~/.wireshark/user_dlts  */
+    //pref_e= prefs_set_pref("uat:user_dlts:\"User 0 (DLT=147)\",\"frp\",\"0\",\"\",\"0\",\"\"");
+    pref_str = g_string_new("uat:user_dlts:");
+    g_string_append_printf(pref_str, "\"User 0 (DLT=147)\",\"%s\",\"0\",\"\",\"0\",\"\"", "frp");
+    sprintf(errorString, "before prefs_set_pref()");
+    pref_e= prefs_set_pref(pref_str->str);
+    g_string_free(pref_str, TRUE);
+    if (pref_e != PREFS_SET_OK) {
+     sprintf(errorString, "prefs_set_pref() failed: pref_e= %i", pref_e);
+     //return pref_e;
+    }
+   }
+  }
+
+  /* disable dissectors as per list read above from disabled_protocolls files */
+  if (dp_read) {
+//   set_disabled_protos_list();
+  }
 
   nstime_set_unset(&self->m_first_ts);
-  self->m_prev_dis = NULL;
-  self->m_prev_cap = NULL;
+  nstime_set_unset(&self->m_prev_dis_ts);
+  nstime_set_unset(&self->m_prev_cap_ts);
 
   self->m_data_offset = 0;
 
@@ -150,9 +193,9 @@ Dissector::~Dissector() {
   self->m_cfile.count++;
   frame_data_init(fdata, self->m_cfile.count, &whdr, self->m_data_offset, self->m_cum_bytes);
   epan_dissect_init(edt, TRUE, TRUE);
-  frame_data_set_before_dissect(fdata, &self->m_cfile.elapsed_time, &self->m_first_ts, self->m_prev_dis, self->m_prev_cap);
-  epan_dissect_run(edt, &self->m_cfile.phdr, data, fdata, &self->m_cfile.cinfo);
-  frame_data_set_after_dissect(fdata, &self->m_cum_bytes);
+  frame_data_set_before_dissect(fdata, &self->m_cfile.elapsed_time, &self->m_first_ts, &self->m_prev_dis_ts, &self->m_prev_cap_ts);
+  epan_dissect_run(edt, &self->m_cfile.pseudo_header, data, fdata, &self->m_cfile.cinfo);
+  frame_data_set_after_dissect(fdata, &self->m_cum_bytes, &self->m_prev_dis_ts);
   self->m_data_offset += whdr.caplen;
   BENCHMARK_END(epanDissect);
 
@@ -188,6 +231,8 @@ Dissector::~Dissector() {
   return v8::Undefined();
 }
 
+/* read .wireshark/preferences ... ,  see read_prefs() in
+  http://anonsvn.wireshark.org/viewvc/trunk-1.8/rawshark.c?revision=48199&view=co */
 e_prefs* Dissector::readPrefs(v8::Handle<v8::Value> *error) {
   char errorString[1000];
   e_prefs *prefs_p;
@@ -218,3 +263,41 @@ e_prefs* Dissector::readPrefs(v8::Handle<v8::Value> *error) {
   }
   return prefs_p;
 }
+
+/* read .wireshark/disabled_protocols ..., see read_disabled_protos_list() in
+  http://anonsvn.wireshark.org/viewvc/trunk-1.8/rawshark.c?revision=48199&view=co */
+int Dissector::readDisabledProtos(v8::Handle<v8::Value> *error) {
+  char errorString[1000];
+  char *gdp_path, *dp_path;
+  int gdp_open_errno, gdp_read_errno;
+  int dp_open_errno, dp_read_errno;
+
+  read_disabled_protos_list(&gdp_path, &gdp_open_errno, &gdp_read_errno,
+                            &dp_path, &dp_open_errno, &dp_read_errno);
+  if (gdp_path != NULL) {
+      if (gdp_open_errno != 0) {
+        sprintf(errorString, "Could not open global disabled protocols file\n\"%s\": %s.",
+                     gdp_path, g_strerror(gdp_open_errno));
+      }
+      if (gdp_read_errno != 0) {
+        sprintf(errorString, "I/O error reading global disabled protocols file\n\"%s\": %s.",
+                     gdp_path, g_strerror(gdp_read_errno));
+      }
+      g_free(gdp_path);
+     *error = v8::ThrowException(v8::Exception::Error(v8::String::New(errorString)));
+  }
+  if (dp_path != NULL) {
+      if (dp_open_errno != 0) {
+        sprintf(errorString, "Could not open your disabled protocols file\n\"%s\": %s.", dp_path,
+              g_strerror(dp_open_errno));
+      }
+      if (dp_read_errno != 0) {
+        sprintf(errorString, "I/O error reading your disabled protocols file\n\"%s\": %s.", dp_path,
+              g_strerror(dp_read_errno));
+      }
+      g_free(dp_path);
+      *error = v8::ThrowException(v8::Exception::Error(v8::String::New(errorString)));
+  }
+ return (gdp_path == NULL && dp_path == NULL);
+}
+
