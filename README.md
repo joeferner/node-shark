@@ -9,7 +9,7 @@ Wrapper around libwireshark providing network packet dissection for [node.js](ht
 ### Build linux
 
 ```bash
-$ svn co http://anonsvn.wireshark.org/wireshark/trunk/ wireshark
+$ git clone https://code.wireshark.org/review/wireshark
 $ cd wireshark
 $ ./autogen.sh
 $ ./configure
@@ -22,7 +22,7 @@ $ node-waf configure build
 ### Build OSX
 
 ```bash
-$ svn co http://anonsvn.wireshark.org/wireshark/trunk/ wireshark
+$ git clone https://code.wireshark.org/review/wireshark
 $ cd wireshark
 $ ./macosx-setup.sh
 $ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/X11/lib/pkgconfig
